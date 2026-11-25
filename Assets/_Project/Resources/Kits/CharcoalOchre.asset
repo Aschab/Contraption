@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50008c50f2e7942afb2a833de571f7f2, type: 3}
+  m_Name: CharcoalOchre
+  m_EditorClassIdentifier: Contraption.Game::Contraption.Game.MachineKit
+  DisplayName: Charcoal & Ochre
+  Body: {r: 0.16078432, g: 0.15294118, b: 0.16470589, a: 1}
+  Trim: {r: 0.78039217, g: 0.5254902, b: 0.18039216, a: 1}
+  Panel: {r: 0.9098039, g: 0.8509804, b: 0.70980394, a: 1}
+  Metal: {r: 0.6039216, g: 0.6039216, b: 0.61960787, a: 1}
+  Accent: {r: 0.3529412, g: 0.20392157, b: 0.1254902, a: 1}
+  Glow: {r: 0.24705882, g: 1, b: 0.8509804, a: 1}
+  Dark: {r: 0.08235294, g: 0.08235294, b: 0.09019608, a: 1}
+  Glass: {r: 0.75, g: 0.92, b: 0.95, a: 0.25}
+  Liquid: {r: 0.24705882, g: 0.8784314, b: 0.78431374, a: 1}
+  Segment: {fileID: 919132149155446097, guid: f438605b00cec4e7394346b793fd42c1, type: 3}
+  EndL: {fileID: 919132149155446097, guid: 02eaa1c93e8b84ba094c723768a883d2, type: 3}
+  EndR: {fileID: 919132149155446097, guid: a5e11b8895d3b46bcb739e975738d6d3, type: 3}
+  Foot: {fileID: 919132149155446097, guid: efcc6122d5b2243719b90f8c85a53788, type: 3}
+  Bay: {fileID: 919132149155446097, guid: 031206c0608c64869a72dc1236e59479, type: 3}
+  Top: {fileID: 919132149155446097, guid: 6e1286863276142c5a37d0a979d9aca1, type: 3}
+  Button: {fileID: 919132149155446097, guid: ec86a84b470cc4838b40dbbb4deea326, type: 3}
+  Lever: {fileID: 919132149155446097, guid: 13595a568a45348a2a4395a5b18fd7d8, type: 3}
+  Dial: {fileID: 919132149155446097, guid: 9a6a9ae34c1174509b1822c4915f006f, type: 3}
+  Knob: {fileID: 919132149155446097, guid: faa22029e44dd4c99a0e63345f72ac32, type: 3}
+  Light: {fileID: 919132149155446097, guid: dd35b18e8c3484c76bef4f869c98205d, type: 3}
+  Bar: {fileID: 919132149155446097, guid: f8994c144a5664d63a878d8c376d1da5, type: 3}
+  Gauge: {fileID: 919132149155446097, guid: d0f6207a55d024a8ebf0b8b570e1423b, type: 3}
+  Glyph: {fileID: 919132149155446097, guid: c0519e808244040be9e8ef9b8037c378, type: 3}
+  Tank: {fileID: 919132149155446097, guid: dba6c33824bde495f8c94672277fee98, type: 3}
+  Pipe: {fileID: 919132149155446097, guid: 0ee535c684fd946b481e93f8cb7f60dc, type: 3}
+  Flange: {fileID: 919132149155446097, guid: a8384a2bf2ecc406aa572712f2c9fa7b, type: 3}
+  Decor:
+  - {fileID: 919132149155446097, guid: bd2df1813a48a452e8401be9c687c708, type: 3}
+  - {fileID: 919132149155446097, guid: e1e16f58f8b764876b3bc0afc11c6902, type: 3}
+  - {fileID: 919132149155446097, guid: 33f02739027d146939d35fe0e337964d, type: 3}

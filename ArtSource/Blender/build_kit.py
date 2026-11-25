@@ -1,6 +1,8 @@
 # Builds the Contraption modular machine kit in Blender and exports FBX pieces to Unity.
 # Run inside Blender: exec(open(<this file>).read()). Convention: model faces -Y (Blender front view),
-# Z up, origin at the piece's attach point. Export maps Blender (x,y,z) -> Unity (x,z,y).
+# Z up, origin at the piece's attach point. Unity honours the FBX axis header, so a plain export lands as
+# Unity (-x, z, -y) (front facing +Z) whatever axis_forward says. export() rotates 180° about Z first,
+# giving Unity (x, z, y): front faces -Z (towards the camera) with identity rotations.
 # Material names: "<Slot>" or "<Slot>.<KIT>"; Unity remaps by the part before the first '.'.
 import bpy, bmesh, math, os
 from mathutils import Matrix, Vector
@@ -280,16 +282,27 @@ def build_all():
         pieces += [f(kit) for f in KIT]
     return pieces
 
+def _turn(obj):
+    # 180° about Z baked into mesh data and child offsets; applying it twice restores the original.
+    R = Matrix.Rotation(math.pi, 4, 'Z')
+    for o in [obj] + list(obj.children_recursive):
+        if o.type == 'MESH': o.data.transform(R)
+        if o is not obj: o.location = R @ o.location
+
 def export(obj, folder):
     os.makedirs(folder, exist_ok=True)
     bpy.ops.object.select_all(action='DESELECT')
     for o in [obj] + list(obj.children_recursive): o.select_set(True)
     loc = obj.location.copy(); obj.location = (0, 0, 0)
-    bpy.ops.export_scene.fbx(filepath=os.path.join(folder, obj.name + ".fbx"), use_selection=True,
-        axis_forward='Z', axis_up='Y', bake_space_transform=True, apply_scale_options='FBX_SCALE_UNITS',
-        object_types={'MESH', 'EMPTY'}, mesh_smooth_type='FACE', add_leaf_bones=False,
-        path_mode='COPY', embed_textures=True)
-    obj.location = loc
+    _turn(obj)
+    try:
+        bpy.ops.export_scene.fbx(filepath=os.path.join(folder, obj.name + ".fbx"), use_selection=True,
+            axis_forward='-Z', axis_up='Y', bake_space_transform=True, apply_scale_options='FBX_SCALE_UNITS',
+            object_types={'MESH', 'EMPTY'}, mesh_smooth_type='FACE', add_leaf_bones=False,
+            path_mode='COPY', embed_textures=True)
+    finally:
+        _turn(obj)
+        obj.location = loc
 
 def layout_preview(pieces):
     x = 0

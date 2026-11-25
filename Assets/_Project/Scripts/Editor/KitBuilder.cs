@@ -54,6 +54,35 @@ namespace Contraption.Editor
             EditorUtility.SetDirty(kit);
         }
 
+        // Logs whether imported pieces face the camera (-Z) with left/right preserved. Runs after every script reload.
+        [InitializeOnLoadMethod]
+        private static void ScheduleOrientationCheck() => EditorApplication.delayCall += CheckOrientation;
+
+        public static void CheckOrientation()
+        {
+            foreach (var prefix in new[] { "CO", "TH" })
+            {
+                var seg = Center(prefix + "_Segment");
+                var endL = Center(prefix + "_EndL");
+                var endR = Center(prefix + "_EndR");
+                if (seg == null || endL == null || endR == null) continue;
+                bool ok = seg.Value.z > 0.2f && endL.Value.x < 0f && endR.Value.x > 0f;
+                string msg = $"Kit orientation {prefix}: {(ok ? "OK" : "WRONG")} (segment centre {seg.Value}, endL {endL.Value}, endR {endR.Value})";
+                if (ok) Debug.Log(msg); else Debug.LogError(msg);
+            }
+        }
+
+        private static Vector3? Center(string name)
+        {
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(Models + name + ".fbx");
+            if (go == null) return null;
+            var mfs = go.GetComponentsInChildren<MeshFilter>();
+            if (mfs.Length == 0) return null;
+            var sum = Vector3.zero;
+            foreach (var mf in mfs) sum += mf.transform.localToWorldMatrix.MultiplyPoint(mf.sharedMesh.bounds.center);
+            return sum / mfs.Length;
+        }
+
         private static GameObject Model(string name)
         {
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(Models + name + ".fbx");
