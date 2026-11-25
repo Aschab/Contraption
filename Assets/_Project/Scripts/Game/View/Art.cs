@@ -3,18 +3,9 @@ using UnityEngine;
 
 namespace Contraption.Game
 {
-    // Placeholder primitive art. Replaced by the modular kit later; keep the palette in sync with Share/ concept art.
+    // Small runtime-built bits (ticks, glyph dots) and per-renderer tinting via property blocks.
     public static class Art
     {
-        public static readonly Color Charcoal = new(0.16f, 0.15f, 0.15f);
-        public static readonly Color Ochre = new(0.78f, 0.52f, 0.18f);
-        public static readonly Color Cream = new(0.90f, 0.84f, 0.70f);
-        public static readonly Color Brass = new(0.70f, 0.52f, 0.25f);
-        public static readonly Color Steel = new(0.60f, 0.60f, 0.62f);
-        public static readonly Color Leather = new(0.35f, 0.20f, 0.12f);
-        public static readonly Color Glow = new(0.25f, 1f, 0.85f);
-        public static readonly Color Unlit = new(0.10f, 0.18f, 0.18f);
-
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
@@ -46,14 +37,6 @@ namespace Contraption.Game
             return go;
         }
 
-        // Cylinder whose axis faces the camera (-Z). Unity cylinders are 2 units tall at scale 1.
-        public static GameObject Disc(Transform parent, Vector3 pos, float diameter, float depth, Color color)
-        {
-            var go = Prim(PrimitiveType.Cylinder, parent, pos, new Vector3(diameter, depth / 2f, diameter), color);
-            go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            return go;
-        }
-
         public static void Paint(Renderer r, Color color, Color emission = default, float smoothness = 0.35f)
         {
             _block ??= new MaterialPropertyBlock();
@@ -65,5 +48,9 @@ namespace Contraption.Game
         }
 
         public static Color LiquidColor(int hue) => Color.HSVToRGB(hue / (float)Values.Levels, 0.75f, 0.95f);
+
+        // Rotation of `moving` by `angle` around a machine-space axis, independent of how the model was imported.
+        public static Vector3 AxisIn(Transform moving, Transform machine, Vector3 machineAxis) =>
+            moving.parent.InverseTransformDirection(machine.TransformDirection(machineAxis));
     }
 }

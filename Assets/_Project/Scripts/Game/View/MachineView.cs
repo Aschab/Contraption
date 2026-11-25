@@ -4,10 +4,11 @@ using UnityEngine;
 
 namespace Contraption.Game
 {
-    // Builds a machine's visuals from its definition and mirrors the session state. Owns no game state.
+    // Assembles a machine from kit pieces and mirrors the session state. Owns no game state.
+    // Layout units match ArtSource/Blender/build_kit.py: 1.1m columns, chassis 2.6m tall, bays 0.9m wide.
     public sealed class MachineView : MonoBehaviour
     {
-        private const float Cell = 1.1f;
+        private const float Col = 1.1f, EndW = 0.35f, BayW = 0.9f, TopY = 2.68f;
 
         private readonly List<ControlView> _controls = new();
         private readonly List<DisplayView> _displays = new();
@@ -15,13 +16,14 @@ namespace Contraption.Game
         private LiquidTankView _output;
         private Renderer _fixedLamp;
         private MachineSession _session;
+        private MachineKit _kit;
         private Transform _root;
 
         public int Focus { get; private set; }
         public int ControlCount => _controls.Count;
         public Bounds Bounds { get; private set; }
 
-        public void Build(MachineSession session)
+        public void Build(MachineSession session, MachineKit kit)
         {
             if (_session != null) _session.Changed -= Refresh;
             if (_root != null) Destroy(_root.gameObject);
@@ -30,51 +32,85 @@ namespace Contraption.Game
             _inputs.Clear();
 
             _session = session;
+            _kit = kit;
             var def = session.Definition;
+            var rng = new Rng(def.Seed ^ 0xDEC0UL);
             _root = new GameObject("Machine").transform;
             _root.SetParent(transform, false);
 
             int cols = Mathf.Max(2, Mathf.Max(def.Controls.Count, def.Displays.Count));
-            float w = cols * Cell + 0.6f;
+            float w = cols * Col;
 
-            // Chassis
-            Art.Prim(PrimitiveType.Cube, _root, new Vector3(0f, 1.3f, 0.45f), new Vector3(w, 2.6f, 0.9f), Art.Charcoal);
-            Art.Prim(PrimitiveType.Cube, _root, new Vector3(0f, 2.65f, 0.45f), new Vector3(w + 0.1f, 0.15f, 1f), Art.Ochre);
-            Art.Prim(PrimitiveType.Cube, _root, new Vector3(0f, 0.02f, 0.45f), new Vector3(w + 0.1f, 0.15f, 1f), Art.Ochre);
-            Art.Prim(PrimitiveType.Cube, _root, new Vector3(0f, 1.95f, -0.01f), new Vector3(w - 0.3f, 1.05f, 0.04f), Art.Cream * 0.85f);
-            Art.Prim(PrimitiveType.Cube, _root, new Vector3(0f, 0.72f, -0.01f), new Vector3(w - 0.3f, 1.15f, 0.04f), Art.Cream * 0.85f);
-            foreach (float x in new[] { -w / 2f + 0.3f, w / 2f - 0.3f })
-                Art.Prim(PrimitiveType.Cube, _root, new Vector3(x, -0.3f, 0.45f), new Vector3(0.3f, 0.5f, 0.5f), Art.Steel);
-            _fixedLamp = Art.Prim(PrimitiveType.Sphere, _root, new Vector3(0f, 2.9f, 0.3f), Vector3.one * 0.3f, Art.Unlit).GetComponent<Renderer>();
+            for (int c = 0; c < cols; c++) kit.Spawn(kit.Segment, _root, new Vector3(ColumnX(c, cols), 0f, 0f));
+            kit.Spawn(kit.EndL, _root, new Vector3(-w / 2f, 0f, 0f));
+            kit.Spawn(kit.EndR, _root, new Vector3(w / 2f, 0f, 0f));
+            kit.Spawn(kit.Foot, _root, new Vector3(-w / 2f + 0.25f, 0f, 0f));
+            kit.Spawn(kit.Foot, _root, new Vector3(w / 2f - 0.25f, 0f, 0f));
 
             var glyphs = Glyphs.Make(def.Seed, Values.Levels + def.Controls.Count);
             var labels = glyphs[Values.Levels..];
-
+            int dOff = (cols - def.Displays.Count) / 2, cOff = (cols - def.Controls.Count) / 2;
             for (int i = 0; i < def.Displays.Count; i++)
-                _displays.Add(DisplayView.Create(_root, new Vector3(Column(i, def.Displays.Count), 1.95f, -0.04f), def.Displays[i], glyphs[..Values.Levels]));
+                _displays.Add(DisplayView.Create(kit, _root, new Vector3(ColumnX(i + dOff, cols), 1.95f, -0.02f), def.Displays[i], glyphs[..Values.Levels]));
             for (int i = 0; i < def.Controls.Count; i++)
-                _controls.Add(ControlView.Create(_root, new Vector3(Column(i, def.Controls.Count), 0.72f, -0.04f), i, def.Controls[i], labels[i]));
+                _controls.Add(ControlView.Create(kit, _root, new Vector3(ColumnX(i + cOff, cols), 0.72f, -0.02f), i, def.Controls[i], labels[i]));
 
-            // Input module (left) and output module (right)
-            float inX = -w / 2f - 0.15f - def.InputPorts * 0.35f;
-            Art.Prim(PrimitiveType.Cube, _root, new Vector3(inX, 1.0f, 0.5f), new Vector3(def.InputPorts * 0.7f + 0.2f, 2.0f, 0.7f), Art.Ochre);
+            // Bays: inputs on the left, output on the right.
+            float leftEdge = -w / 2f - EndW, rightEdge = w / 2f + EndW;
             for (int p = 0; p < def.InputPorts; p++)
-                _inputs.Add(LiquidTankView.Create(_root, new Vector3(inX + (p - (def.InputPorts - 1) / 2f) * 0.7f, 1.3f, 0.1f), 1.1f, 0.45f));
-            float outX = w / 2f + 0.55f;
-            Art.Prim(PrimitiveType.Cube, _root, new Vector3(outX, 1.0f, 0.5f), new Vector3(0.9f, 2.0f, 0.7f), Art.Ochre);
-            _output = LiquidTankView.Create(_root, new Vector3(outX, 1.4f, 0.05f), 1.4f, 0.6f);
-            Art.Prim(PrimitiveType.Cylinder, _root, new Vector3(0f, 2.45f, -0.05f), new Vector3(0.12f, (outX - inX) / 2f, 0.12f), Art.Brass)
-                .transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            {
+                float x = leftEdge - BayW / 2f - p * BayW;
+                Bay(x);
+                _inputs.Add(LiquidTankView.Create(kit, _root, new Vector3(x, 0.56f, 0.05f), 1f));
+            }
+            float outX = rightEdge + BayW / 2f;
+            Bay(outX);
+            _output = LiquidTankView.Create(kit, _root, new Vector3(outX, 0.56f, 0.05f), 1.12f);
+            float minX = leftEdge - def.InputPorts * BayW, maxX = rightEdge + BayW;
 
-            Bounds = new Bounds(new Vector3((inX - def.InputPorts * 0.35f - 0.2f + outX + 0.5f) / 2f, 1.3f, 0f),
-                new Vector3(outX + 0.5f - (inX - def.InputPorts * 0.35f - 0.2f), 3.6f, 1f));
+            // Pipes from the bays into the chassis.
+            Pipe(minX + BayW / 2f, leftEdge, 2.3f);
+            Pipe(rightEdge, outX, 2.3f);
 
+            // Top: decor props and crests, seeded per machine.
+            var topCols = new List<int>();
+            for (int c = 0; c < cols; c++) topCols.Add(c);
+            rng.Shuffle(topCols);
+            int decorCount = kit.Decor.Length == 0 ? 0 : Mathf.Clamp(cols / 2, 1, kit.Decor.Length);
+            var decor = new List<GameObject>(kit.Decor);
+            rng.Shuffle(decor);
+            for (int i = 0; i < topCols.Count; i++)
+            {
+                var pos = new Vector3(ColumnX(topCols[i], cols), TopY, 0.4f);
+                if (i < decorCount) Instantiate(decor[i], _root, false).transform.localPosition = pos;
+                else if (rng.Chance(0.6)) kit.Spawn(kit.Top, _root, pos);
+            }
+
+            var lamp = kit.Spawn(kit.Light, _root, new Vector3(outX, 2.45f, 0.1f), "FixedLamp");
+            lamp.transform.localScale = Vector3.one * 0.7f;
+            _fixedLamp = MachineKit.Find(lamp.transform, "Bulb").GetComponent<Renderer>();
+
+            Bounds = new Bounds(new Vector3((minX + maxX) / 2f, 1.5f, 0f), new Vector3(maxX - minX, 4.2f, 1f));
             Focus = 0;
             _session.Changed += Refresh;
             Refresh(true);
         }
 
-        private static float Column(int i, int count) => (i - (count - 1) / 2f) * Cell;
+        private void Bay(float x)
+        {
+            _kit.Spawn(_kit.Bay, _root, new Vector3(x, 0f, 0f));
+            _kit.Spawn(_kit.Foot, _root, new Vector3(x, 0f, 0f));
+        }
+
+        private void Pipe(float fromX, float toX, float y)
+        {
+            var p = _kit.Spawn(_kit.Pipe, _root, new Vector3(fromX, y, 0.3f));
+            p.transform.localScale = new Vector3(toX - fromX, 1f, 1f);
+            _kit.Spawn(_kit.Flange, _root, new Vector3(fromX, y, 0.3f));
+            _kit.Spawn(_kit.Flange, _root, new Vector3(toX, y, 0.3f));
+        }
+
+        private static float ColumnX(int i, int count) => (i - (count - 1) / 2f) * Col;
 
         public bool TryGetControl(Collider c, out ControlView view)
         {
@@ -102,7 +138,7 @@ namespace Contraption.Game
             for (int p = 0; p < _inputs.Count; p++) _inputs[p].Show(def.InputPool[_session.SelectedInputs[p]]);
             _output.Show(_session.LastOutput);
             bool solved = _session.Solved;
-            Art.Paint(_fixedLamp, solved ? Color.green : Art.Unlit, solved ? Color.green * 3f : Color.black, 0.9f);
+            Art.Paint(_fixedLamp, solved ? Color.green : _kit.Dark * 1.6f, solved ? Color.green * 3f : Color.black, 0.9f);
             SetFocus(Focus);
         }
 

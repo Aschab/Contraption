@@ -6,6 +6,8 @@ namespace Contraption.Core
     public sealed class MachineDefinition
     {
         public string Name = "Machine";
+        // Visual kit name (Unity side). Empty = lab's current kit.
+        public string Kit = "";
         public ulong Seed;
         public int GeneratorVersion;
         public int InputPorts = 1;

@@ -21,14 +21,14 @@ namespace Contraption.Game
             return list.ToArray();
         }
 
-        public static Renderer[] Build(Transform parent, Vector3 center, float spacing)
+        public static Renderer[] Build(Transform parent, Vector3 center, float spacing, Color color)
         {
             var cells = new Renderer[9];
             for (int i = 0; i < 9; i++)
             {
                 var pos = center + new Vector3((i % 3 - 1) * spacing, (1 - i / 3) * spacing, 0f);
                 var size = spacing * 0.75f;
-                cells[i] = Art.Prim(PrimitiveType.Cube, parent, pos, new Vector3(size, size, 0.02f), Art.Unlit).GetComponent<Renderer>();
+                cells[i] = Art.Prim(PrimitiveType.Cube, parent, pos, new Vector3(size, size, 0.02f), color).GetComponent<Renderer>();
             }
             return cells;
         }

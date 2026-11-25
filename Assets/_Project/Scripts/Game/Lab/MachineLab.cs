@@ -10,6 +10,7 @@ namespace Contraption.Game
     {
         private const string SettingsKey = "contraption.lab.settings";
         private const string SeedKey = "contraption.lab.seed";
+        private const string KitKey = "contraption.lab.kit";
 
         [SerializeField] private Camera _camera;
 
@@ -17,6 +18,7 @@ namespace Contraption.Game
         private readonly AnalyzerHud _hud = new();
         private readonly LabPanel _panel = new();
         private MachineView _view;
+        private MachineKit[] _kits;
         private bool _panelVisible = true;
         private float _uiScale = 1f;
 
@@ -26,11 +28,22 @@ namespace Contraption.Game
         public string Status { get; private set; } = "";
         public string SeedText { get; set; } = "1";
         public int GoalDistance { get; private set; }
+        public MachineKit[] Kits => _kits;
+        public int KitIndex { get; private set; }
 
         private void Start()
         {
             if (_camera == null) _camera = Camera.main;
             _view = new GameObject("MachineView").AddComponent<MachineView>();
+            _kits = Resources.LoadAll<MachineKit>("Kits");
+            System.Array.Sort(_kits, (a, b) => string.CompareOrdinal(a.name, b.name));
+            if (_kits.Length == 0)
+            {
+                Status = "No kits in Resources/Kits — run Contraption → Build Kits.";
+                enabled = false;
+                return;
+            }
+            KitIndex = Mathf.Clamp(PlayerPrefs.GetInt(KitKey, 0), 0, _kits.Length - 1);
             Settings = LoadSettings();
             SeedText = PlayerPrefs.GetString(SeedKey, "1");
             Generate();
@@ -105,12 +118,24 @@ namespace Contraption.Game
             var solve = Solver.Solve(def);
             Report = solve.Solvable ? Difficulty.Evaluate(def, solve) : null;
             if (!solve.Solvable) Status = "Loaded machine is NOT solvable from its start state.";
+            int k = System.Array.FindIndex(_kits, x => x.name == def.Kit);
+            if (k >= 0) KitIndex = k;
+            else def.Kit = _kits[KitIndex].name;
             Session = new MachineSession(def);
             Session.Changed += UpdateGoalDistance;
             UpdateGoalDistance();
             _input.ActivePort = 0;
-            _view.Build(Session);
+            _view.Build(Session, _kits[KitIndex]);
             Frame();
+        }
+
+        public void SetKit(int index)
+        {
+            KitIndex = index;
+            PlayerPrefs.SetInt(KitKey, index);
+            if (Session == null) return;
+            Session.Definition.Kit = _kits[index].name;
+            Load(Session.Definition);
         }
 
         public void LoadFile(string path)

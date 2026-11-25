@@ -14,6 +14,7 @@ namespace Contraption.Editor
         public static void Open()
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            if (AssetDatabase.FindAssets("t:MachineKit", new[] { "Assets/_Project/Resources/Kits" }).Length == 0) KitBuilder.BuildAll();
             if (System.IO.File.Exists(ScenePath))
             {
                 EditorSceneManager.OpenScene(ScenePath);

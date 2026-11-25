@@ -29,6 +29,14 @@ namespace Contraption.Game
             if (GUILayout.Button("Random", GUILayout.Width(64))) lab.RandomSeed();
             GUILayout.EndHorizontal();
             if (GUILayout.Button("<b>GENERATE</b>", Rich(GUI.skin.button), GUILayout.Height(28))) lab.Generate();
+            if (lab.Kits != null)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Kit", GUILayout.Width(40));
+                for (int i = 0; i < lab.Kits.Length; i++)
+                    if (GUILayout.Toggle(lab.KitIndex == i, lab.Kits[i].DisplayName, GUI.skin.button) && lab.KitIndex != i) lab.SetKit(i);
+                GUILayout.EndHorizontal();
+            }
 
             _showSettings = GUILayout.Toggle(_showSettings, "Generator settings");
             if (_showSettings) DrawSettings(s);
