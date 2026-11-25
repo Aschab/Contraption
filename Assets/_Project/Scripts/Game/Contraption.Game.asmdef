@@ -1,0 +1,14 @@
+{
+  "name": "Contraption.Game",
+  "rootNamespace": "Contraption.Game",
+  "references": ["Contraption.Core", "Unity.InputSystem"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

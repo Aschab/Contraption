@@ -31,7 +31,7 @@ namespace Contraption.Core
         public static SolveResult Solve(MachineDefinition def, int maxStates = 500_000) =>
             Solve(def, new StateLayout(def), null, maxStates);
 
-        public static SolveResult Solve(MachineDefinition def, StateLayout layout, bool[] goal, int maxStates)
+        public static SolveResult Solve(MachineDefinition def, StateLayout layout, bool[] goal, int maxStates, int[] start = null)
         {
             goal ??= BuildGoalTable(def, layout);
             var moves = MachineRules.AllMoves(def);
@@ -44,9 +44,9 @@ namespace Contraption.Core
             var edgeFrom = new List<int>();
             var edgeTo = new List<int>();
 
-            long start = layout.Encode(def.StartState);
-            index[start] = 0;
-            codes.Add(start);
+            long startCode = layout.Encode(start ?? def.StartState);
+            index[startCode] = 0;
+            codes.Add(startCode);
             parent.Add(-1);
             parentMove.Add(-1);
 
