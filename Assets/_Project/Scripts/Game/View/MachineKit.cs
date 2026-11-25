@@ -84,15 +84,21 @@ namespace Contraption.Game
             m.SetColor("_BaseColor", new Color(c.r, c.g, c.b, alpha));
         }
 
-        public static Transform Find(Transform root, string childName)
+        // Finds a named part, ignoring Blender's duplicate suffixes ("Moving.001"). Throws with context if missing.
+        public static Transform Find(Transform root, string partName)
         {
-            if (root.name == childName) return root;
-            foreach (Transform c in root)
-            {
-                var f = Find(c, childName);
-                if (f != null) return f;
-            }
-            return null;
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                if (BaseName(t.name) == partName) return t;
+            throw new InvalidOperationException($"Kit model '{root.name}' has no part named '{partName}'.");
+        }
+
+        private static string BaseName(string n)
+        {
+            int dot = n.LastIndexOf('.');
+            if (dot <= 0) return n;
+            for (int i = dot + 1; i < n.Length; i++)
+                if (!char.IsDigit(n[i])) return n;
+            return n.Substring(0, dot);
         }
 
         public static Transform FindSuffix(Transform root, string suffix)
