@@ -19,6 +19,8 @@ namespace Contraption.Core
         public double InvertedDisplayChance = 0.2;
         public int MinSolutionLength = 3, MaxSolutionLength = 12;
         public double MaxGoalFraction = 0.1;
+        // Share of reachable states from which the goal is unreachable (only Reset saves you).
+        public double MaxTrapRatio = 0.2;
         public int MaxStates = 200_000;
         public int MaxAttempts = 200;
         public int StartTriesPerMachine = 5;

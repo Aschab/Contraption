@@ -8,6 +8,7 @@ public static class Program
 {
     public static int Main(string[] args)
     {
+        if (args.Length > 1 && args[0] == "show") return Show(ulong.Parse(args[1]));
         if (args.Length > 0 && args[0] == "gen") return GenStats(args.Length > 1 ? int.Parse(args[1]) : 30);
 
         int failed = 0, passed = 0;
@@ -28,6 +29,20 @@ public static class Program
         }
         Console.WriteLine($"{passed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
+    }
+
+    // `dotnet run -- show SEED`: dump one generated machine (default settings) with its solution.
+    private static int Show(ulong seed)
+    {
+        var r = Contraption.Core.MachineGenerator.Generate(seed, new Contraption.Core.GeneratorSettings());
+        if (!r.Success) { Console.WriteLine("generation failed"); return 1; }
+        var def = r.Definition;
+        Console.WriteLine(Contraption.Core.MachineDescriber.Describe(def));
+        Console.WriteLine($"Start [{string.Join(",", def.StartState)}]");
+        Console.WriteLine("Pool: " + string.Join(" | ", def.InputPool));
+        foreach (var e in def.Manual) Console.WriteLine($"Manual: {string.Join(" + ", e.Inputs)} -> {e.Output}");
+        Console.WriteLine("Solution: " + string.Join(", ", r.Solve.Solution));
+        return 0;
     }
 
     // `dotnet run -- gen N`: generate N machines with default settings and print metrics.

@@ -25,6 +25,7 @@ namespace Contraption.Game
         public DifficultyReport Report { get; private set; }
         public string Status { get; private set; } = "";
         public string SeedText { get; set; } = "1";
+        public int GoalDistance { get; private set; }
 
         private void Start()
         {
@@ -105,6 +106,8 @@ namespace Contraption.Game
             Report = solve.Solvable ? Difficulty.Evaluate(def, solve) : null;
             if (!solve.Solvable) Status = "Loaded machine is NOT solvable from its start state.";
             Session = new MachineSession(def);
+            Session.Changed += UpdateGoalDistance;
+            UpdateGoalDistance();
             _input.ActivePort = 0;
             _view.Build(Session);
             Frame();
@@ -117,6 +120,8 @@ namespace Contraption.Game
         }
 
         public void Save() => Status = "Saved " + LevelStore.Save(Session.Definition);
+
+        private void UpdateGoalDistance() => GoalDistance = Session.SolveFromHere()?.Count ?? -1;
 
         public void HintStep()
         {

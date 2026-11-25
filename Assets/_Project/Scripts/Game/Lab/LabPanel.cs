@@ -50,6 +50,7 @@ namespace Contraption.Game
                 GUILayout.Space(6);
                 GUILayout.Label("<b>DEBUG</b>", Rich());
                 GUILayout.Label($"State [{string.Join(",", session.State)}] · moves {session.Moves}");
+                GUILayout.Label(lab.GoalDistance < 0 ? "<color=red><b>TRAPPED</b></color> — goal unreachable, reset (R)" : $"Distance to goal: {lab.GoalDistance}", Rich());
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Hint step")) lab.HintStep();
                 if (GUILayout.Button("Show solution")) _solutionText = lab.SolutionText();
@@ -94,6 +95,7 @@ namespace Contraption.Game
             s.CombinedDisplayChance = Pct("Combined display", s.CombinedDisplayChance);
             s.InvertedDisplayChance = Pct("Inverted display", s.InvertedDisplayChance);
             s.MaxGoalFraction = Pct("Max goal fraction", s.MaxGoalFraction);
+            s.MaxTrapRatio = Pct("Max trap ratio", s.MaxTrapRatio);
             Kinds("Controls", s.ControlKinds);
             Kinds("Displays", s.DisplayKinds);
             Kinds("Ops", s.OpKinds);

@@ -54,6 +54,7 @@ namespace Contraption.Core
                     int len = solve.Solution.Count;
                     if (len < s.MinSolutionLength) { Reject(result, "solution too short"); continue; }
                     if (len > s.MaxSolutionLength) { Reject(result, "solution too long"); continue; }
+                    if (solve.TrapStates > s.MaxTrapRatio * solve.ReachableStates) { Reject(result, "too many traps"); continue; }
 
                     result.Definition = def;
                     result.Solve = solve;
