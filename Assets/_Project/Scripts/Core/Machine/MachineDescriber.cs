@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Contraption.Core
 {
-    // Human-readable dump of a machine's hidden rules, for the lab and debugging. Never shown to players.
+    // Human-readable dump of a machine's internal rules, for the lab and debugging. Never shown to players.
     public static class MachineDescriber
     {
         public static string Describe(MachineDefinition def)
@@ -42,8 +42,13 @@ namespace Contraption.Core
             sb.AppendLine("Pipeline:");
             foreach (var op in def.Pipeline)
             {
-                string src = op.Kind == OpKind.Siphon || op.Kind == OpKind.Swap ? $" ⇄ {op.Source}" : "";
-                string th = op.Kind == OpKind.Purge || op.Kind == OpKind.Swap ? $" (R{op.Register}≥{op.Threshold})" : $" by R{op.Register}";
+                string src = op.Kind is OpKind.Siphon or OpKind.Swap or OpKind.Exchange ? $" ⇄ {op.Source}" : "";
+                string th = op.Kind switch
+                {
+                    OpKind.Exchange => " (always)",
+                    OpKind.Purge or OpKind.Swap => $" (R{op.Register}≥{op.Threshold})",
+                    _ => $" by R{op.Register}",
+                };
                 sb.AppendLine($"   {op.Kind} {op.Target}{src}{th}");
             }
 

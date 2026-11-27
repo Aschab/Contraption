@@ -16,7 +16,6 @@ namespace Contraption.Game
 
         public void Draw(Rect area, MachineLab lab)
         {
-            var s = lab.Settings;
             GUILayout.BeginArea(area, GUI.skin.box);
             _scroll = GUILayout.BeginScrollView(_scroll);
             GUILayout.Label("<b>MACHINE LAB</b>  (F1 hides)", Rich());
@@ -38,8 +37,11 @@ namespace Contraption.Game
                 GUILayout.EndHorizontal();
             }
 
+            GUILayout.BeginHorizontal();
             _showSettings = GUILayout.Toggle(_showSettings, "Generator settings");
-            if (_showSettings) DrawSettings(s);
+            if (GUILayout.Button("Reset to defaults", GUILayout.Width(130))) lab.ResetSettings();
+            GUILayout.EndHorizontal();
+            if (_showSettings) DrawSettings(lab.Settings);
 
             GUILayout.Space(6);
             GUILayout.Label("<b>RESULT</b>", Rich());
@@ -49,7 +51,7 @@ namespace Contraption.Game
             {
                 GUILayout.Label($"Score {d.Score:F1} · solution {d.SolutionLength} moves");
                 GUILayout.Label($"States {d.ReachableStates} · goal {d.GoalStates} · traps {d.TrapStates}");
-                GUILayout.Label($"Registers {d.Registers} (hidden {d.HiddenRegisters}) · controls {d.Controls} · conditional {d.ConditionalEffects} · ops {d.PipelineOps}");
+                GUILayout.Label($"Registers {d.Registers} · controls {d.Controls} · conditional {d.ConditionalEffects} · ops {d.PipelineOps}");
             }
 
             if (lab.Session != null)
@@ -96,7 +98,6 @@ namespace Contraption.Game
             s.ManualEntries = Int("Manual entries", s.ManualEntries, 1, 6);
             s.ExtraOps = Int("Extra pipeline ops", s.ExtraOps, 0, 6);
             s.Displays = Int("Displays (min)", s.Displays, 1, 8);
-            s.MaxHiddenRegisters = Int("Max hidden registers", s.MaxHiddenRegisters, 0, 5);
             s.MaxDeltasPerEffect = Int("Max deltas per effect", s.MaxDeltasPerEffect, 1, 4);
             s.ConditionalChance = Pct("Conditional chance", s.ConditionalChance);
             s.WrapChance = Pct("Wrap chance", s.WrapChance);

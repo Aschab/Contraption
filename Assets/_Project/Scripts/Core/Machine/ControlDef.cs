@@ -2,8 +2,8 @@ using System.Collections.Generic;
 
 namespace Contraption.Core
 {
-    public enum ControlKind { Button, Lever, Dial, Knob }
-    public enum ActionKind { Press, Increment, Decrement }
+    public enum ControlKind { Button, Lever, Dial, Knob, Joystick }
+    public enum ActionKind { Press, Increment, Decrement, PushUp, PushDown, PushLeft, PushRight, Center }
     public enum Comparison { Equal, NotEqual, Less, GreaterOrEqual }
 
     public sealed class ControlDef
@@ -12,6 +12,20 @@ namespace Contraption.Core
         public int Positions = 1;
         public bool Wraps;
         public List<ControlAction> Actions = new();
+
+        // Joystick positions: 0 neutral, 1 up, 2 down, 3 left, 4 right.
+        public const int JoystickPositions = 5;
+
+        public static int JoystickTarget(ActionKind a) => a switch
+        {
+            ActionKind.PushUp => 1,
+            ActionKind.PushDown => 2,
+            ActionKind.PushLeft => 3,
+            ActionKind.PushRight => 4,
+            _ => 0,
+        };
+
+        public static bool IsJoystickAction(ActionKind a) => a >= ActionKind.PushUp;
 
         public ControlAction Find(ActionKind kind)
         {

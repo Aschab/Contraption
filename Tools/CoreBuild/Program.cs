@@ -62,7 +62,7 @@ public static class Program
             }
             ok++;
             var d = r.Difficulty;
-            Console.WriteLine($"seed {seed,3}: att {r.Attempts,3} len {d.SolutionLength,2} reach {d.ReachableStates,6} goal {d.GoalStates,4} traps {d.TrapStates,6} cond {d.ConditionalEffects} hidden {d.HiddenRegisters} score {d.Score,5:F1} {sw.ElapsedMilliseconds}ms");
+            Console.WriteLine($"seed {seed,3}: att {r.Attempts,3} len {d.SolutionLength,2} reach {d.ReachableStates,6} goal {d.GoalStates,4} traps {d.TrapStates,6} cond {d.ConditionalEffects} score {d.Score,5:F1} {sw.ElapsedMilliseconds}ms");
         }
         Console.WriteLine($"{ok}/{count} succeeded");
         return 0;

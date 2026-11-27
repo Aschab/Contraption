@@ -137,6 +137,18 @@ def ctl_knob():
     m.build("Moving", root, (0, -0.1, 0.05))
     return root
 
+def ctl_joystick():
+    # Stick points at the camera (-Y); Moving pivots at the boot so tilting moves the ball up/down/left/right.
+    mb = MB(); control_plate(mb)
+    mb.cyl(0.3, 0.05, (0, -0.05, 0.05), "Metal", segs=8, bevel=0.015, rot_z=math.pi / 8)
+    mb.cyl(0.2, 0.1, (0, -0.1, 0.05), "Dark", segs=8, r2=0.12, rot_z=math.pi / 8)
+    root = mb.build("Ctl_Joystick"); frame(root)
+    m = MB()
+    m.cyl(0.04, 0.3, (0, -0.15, 0), "Metal", segs=8)
+    m.sphere(0.09, (0, -0.32, 0), "Accent")
+    m.build("Moving", root, (0, -0.12, 0.05))
+    return root
+
 def disp_light():
     mb = MB(); mb.cyl(0.27, 0.06, (0, -0.03, 0), "Metal", segs=8, bevel=0.015, rot_z=math.pi / 8)
     mb.cyl(0.2, 0.04, (0, -0.07, 0), "Dark", segs=8, rot_z=math.pi / 8)
@@ -265,7 +277,7 @@ def top_crest(kit):
         mb.box((0.5, 0.02, 0.1), (0, 0.19, 0.15), "Glow", 0)
     return mb.build(f"{kit}_Top")
 
-SHARED = [ctl_button, ctl_lever, lambda: ctl_dial("Ctl_Dial", 0.3, "Metal"), ctl_knob,
+SHARED = [ctl_button, ctl_lever, lambda: ctl_dial("Ctl_Dial", 0.3, "Metal"), ctl_knob, ctl_joystick,
           disp_light, disp_bar, disp_gauge, disp_glyph, tank, pipe, flange]
 KIT = [segment, lambda k: end_cap(k, "L"), lambda k: end_cap(k, "R"), foot, bay, top_crest]
 

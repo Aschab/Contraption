@@ -68,7 +68,7 @@ namespace Contraption.Game
                     Art.Paint(_bulb, lit ? on : off, lit ? on * 2.5f : Color.black, 0.8f);
                     break;
                 case DisplayKind.Bar:
-                    int n = Mathf.RoundToInt(norm * _cells.Length);
+                    int n = MachineRules.Readout(_def, state);
                     for (int i = 0; i < _cells.Length; i++) Art.Paint(_cells[i], i < n ? on : off, i < n ? on * 1.5f : Color.black);
                     break;
                 case DisplayKind.Gauge:
@@ -76,7 +76,7 @@ namespace Contraption.Game
                     if (instant) _needleAngle = _needleTarget;
                     break;
                 case DisplayKind.Glyph:
-                    Glyphs.Paint(_cells, _glyphs[Values.Wrap(value, _glyphs.Length)], on, off, 1.5f);
+                    Glyphs.Paint(_cells, _glyphs[MachineRules.Readout(_def, state)], on, off, 1.5f);
                     break;
             }
         }

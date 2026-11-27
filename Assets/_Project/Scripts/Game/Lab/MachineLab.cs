@@ -100,6 +100,8 @@ namespace Contraption.Game
             Status = $"Seed {seed}: {result.Attempts} attempts, {sw.ElapsedMilliseconds} ms. {rejections}";
         }
 
+        public void ResetSettings() => Settings = new GeneratorSettings();
+
         public void StepSeed(int dir)
         {
             ulong.TryParse(SeedText, out ulong seed);

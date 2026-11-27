@@ -44,7 +44,7 @@ namespace Contraption.Editor
             kit.DisplayName = display;
             kit.Segment = Model(prefix + "_Segment"); kit.EndL = Model(prefix + "_EndL"); kit.EndR = Model(prefix + "_EndR");
             kit.Foot = Model(prefix + "_Foot"); kit.Bay = Model(prefix + "_Bay"); kit.Top = Model(prefix + "_Top");
-            kit.Button = Model("Ctl_Button"); kit.Lever = Model("Ctl_Lever"); kit.Dial = Model("Ctl_Dial"); kit.Knob = Model("Ctl_Knob");
+            kit.Button = Model("Ctl_Button"); kit.Lever = Model("Ctl_Lever"); kit.Dial = Model("Ctl_Dial"); kit.Knob = Model("Ctl_Knob"); kit.Joystick = Model("Ctl_Joystick");
             kit.Light = Model("Disp_Light"); kit.Bar = Model("Disp_Bar"); kit.Gauge = Model("Disp_Gauge"); kit.Glyph = Model("Disp_Glyph");
             kit.Tank = Model("Tank"); kit.Pipe = Model("Pipe"); kit.Flange = Model("Flange");
             var decor = new System.Collections.Generic.List<GameObject>();
@@ -56,7 +56,16 @@ namespace Contraption.Editor
 
         // Logs whether imported pieces face the camera (-Z) with left/right preserved. Runs after every script reload.
         [InitializeOnLoadMethod]
-        private static void ScheduleOrientationCheck() => EditorApplication.delayCall += CheckOrientation;
+        private static void ScheduleOrientationCheck() => EditorApplication.delayCall += () =>
+        {
+            // Kits created before a new piece existed get their references filled in automatically.
+            foreach (var guid in AssetDatabase.FindAssets("t:MachineKit"))
+            {
+                var kit = AssetDatabase.LoadAssetAtPath<MachineKit>(AssetDatabase.GUIDToAssetPath(guid));
+                if (kit != null && (kit.Joystick == null || kit.Segment == null)) { BuildAll(); break; }
+            }
+            CheckOrientation();
+        };
 
         public static void CheckOrientation()
         {

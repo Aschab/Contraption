@@ -69,7 +69,7 @@ namespace Contraption.Game
             }
 
             GUILayout.EndScrollView();
-            GUILayout.Label("Click/←→ select · ↑↓ turn · Space use · Z undo · R reset");
+            GUILayout.Label("Click/←→ select · ↑↓ turn · Space use · Z undo · R reset\nJoystick: click a side · ↑↓ · Shift+←→ · Space centre");
             GUILayout.EndArea();
         }
 

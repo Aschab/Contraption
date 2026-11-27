@@ -11,7 +11,6 @@ namespace Contraption.Core
         public int ManualEntries = 2;
         public int ExtraOps = 1;
         public int Displays = 3;
-        public int MaxHiddenRegisters;
         public int MaxDeltasPerEffect = 2;
         public double ConditionalChance = 0.25;
         public double WrapChance = 0.3;
@@ -24,8 +23,8 @@ namespace Contraption.Core
         public int MaxStates = 200_000;
         public int MaxAttempts = 200;
         public int StartTriesPerMachine = 5;
-        public List<ControlKind> ControlKinds = new() { ControlKind.Button, ControlKind.Lever, ControlKind.Dial, ControlKind.Knob };
-        public List<OpKind> OpKinds = new() { OpKind.Add, OpKind.Subtract, OpKind.Cap, OpKind.Raise, OpKind.Purge, OpKind.Amplify, OpKind.Siphon, OpKind.Swap };
+        public List<ControlKind> ControlKinds = new() { ControlKind.Button, ControlKind.Lever, ControlKind.Dial, ControlKind.Knob, ControlKind.Joystick };
+        public List<OpKind> OpKinds = new() { OpKind.Add, OpKind.Subtract, OpKind.Cap, OpKind.Raise, OpKind.Purge, OpKind.Amplify, OpKind.Siphon, OpKind.Swap, OpKind.Exchange };
         public List<DisplayKind> DisplayKinds = new() { DisplayKind.Light, DisplayKind.Bar, DisplayKind.Gauge, DisplayKind.Glyph };
     }
 }

@@ -12,8 +12,8 @@ namespace Contraption.Game
         private Transform _moving;
         private Renderer _frame;
         private Quaternion _restRot;
-        private Vector3 _restPos, _axis, _pushDir;
-        private float _angle, _targetAngle, _pressTimer;
+        private Vector3 _restPos, _axis, _axis2, _pushDir;
+        private float _angle, _targetAngle, _angle2, _targetAngle2, _pressTimer;
 
         public int Index { get; private set; }
         public ControlKind Kind => _def.Kind;
@@ -32,6 +32,7 @@ namespace Contraption.Game
                 ControlKind.Button => kit.Button,
                 ControlKind.Lever => kit.Lever,
                 ControlKind.Dial => kit.Dial,
+                ControlKind.Joystick => kit.Joystick,
                 _ => kit.Knob,
             };
             var v = go.AddComponent<ControlView>();
@@ -44,7 +45,9 @@ namespace Contraption.Game
             v._restRot = v._moving.localRotation;
             v._restPos = v._moving.localPosition;
             bool lever = def.Kind == ControlKind.Lever;
-            v._axis = Art.AxisIn(v._moving, machine, lever ? Vector3.right : Vector3.forward);
+            bool stick = def.Kind == ControlKind.Joystick;
+            v._axis = Art.AxisIn(v._moving, machine, lever || stick ? Vector3.right : Vector3.forward);
+            v._axis2 = Art.AxisIn(v._moving, machine, Vector3.up);
             v._pushDir = Art.AxisIn(v._moving, machine, Vector3.forward);
 
             if (def.Kind is ControlKind.Dial or ControlKind.Knob)
@@ -58,6 +61,10 @@ namespace Contraption.Game
                     tick.localRotation = rot;
                 }
             }
+            if (stick)
+                foreach (var dir in new[] { Vector2.up, Vector2.down, Vector2.left, Vector2.right })
+                    Art.Prim(PrimitiveType.Cube, go.transform, new Vector3(dir.x * 0.36f, 0.05f + dir.y * 0.36f, -0.04f),
+                        new Vector3(0.07f, 0.07f, 0.02f), kit.Dark).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
             var label = Glyphs.Build(go.transform, new Vector3(0f, -0.38f, -0.035f), 0.045f, kit.Dark);
             Glyphs.Paint(label, labelGlyph, kit.Dark, kit.Panel * 0.92f, 0f);
             return v;
@@ -73,8 +80,19 @@ namespace Contraption.Game
 
         public void Show(int position, bool instant)
         {
-            _targetAngle = AngleFor(position);
-            if (instant) _angle = _targetAngle;
+            if (_def.Kind == ControlKind.Joystick)
+            {
+                // Tilt toward the pushed direction: X axis lifts the ball up/down, Y axis swings it left/right.
+                const float tilt = 28f;
+                _targetAngle = position == 1 ? tilt : position == 2 ? -tilt : 0f;
+                _targetAngle2 = position == 3 ? tilt : position == 4 ? -tilt : 0f;
+            }
+            else _targetAngle = AngleFor(position);
+            if (instant)
+            {
+                _angle = _targetAngle;
+                _angle2 = _targetAngle2;
+            }
             ApplyPose();
         }
 
@@ -88,13 +106,17 @@ namespace Contraption.Game
         private void Update()
         {
             _angle = Mathf.MoveTowardsAngle(_angle, _targetAngle, AnimSpeed * Time.deltaTime);
+            _angle2 = Mathf.MoveTowardsAngle(_angle2, _targetAngle2, AnimSpeed * Time.deltaTime);
             _pressTimer = Mathf.Max(0f, _pressTimer - Time.deltaTime);
             ApplyPose();
         }
 
         private void ApplyPose()
         {
-            if (_def.Kind != ControlKind.Button) _moving.localRotation = Quaternion.AngleAxis(_angle, _axis) * _restRot;
+            if (_def.Kind == ControlKind.Joystick)
+                _moving.localRotation = Quaternion.AngleAxis(_angle2, _axis2) * Quaternion.AngleAxis(_angle, _axis) * _restRot;
+            else if (_def.Kind != ControlKind.Button)
+                _moving.localRotation = Quaternion.AngleAxis(_angle, _axis) * _restRot;
             _moving.localPosition = _restPos + (_pressTimer > 0f ? _pushDir * 0.05f : Vector3.zero);
         }
     }

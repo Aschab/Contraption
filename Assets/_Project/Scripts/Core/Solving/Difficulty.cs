@@ -9,7 +9,6 @@ namespace Contraption.Core
         public int GoalStates;
         public int TrapStates;
         public int Registers;
-        public int HiddenRegisters;
         public int Controls;
         public int ConditionalEffects;
         public int PipelineOps;
@@ -32,11 +31,6 @@ namespace Contraption.Core
                 PipelineOps = def.Pipeline.Count,
             };
 
-            var seen = new bool[def.Registers.Count];
-            foreach (var d in def.Displays)
-                foreach (var t in d.Terms) seen[t.Register] = true;
-            foreach (bool s in seen) if (!s) r.HiddenRegisters++;
-
             foreach (var c in def.Controls)
                 foreach (var a in c.Actions)
                     foreach (var e in a.Effects)
@@ -47,7 +41,6 @@ namespace Contraption.Core
                       + Math.Log(Math.Max(1, r.ReachableStates), 2) * 0.5
                       - Math.Log(Math.Max(1, r.GoalStates), 2) * 0.5
                       + r.ConditionalEffects * 0.75
-                      + r.HiddenRegisters * 1.5
                       + r.PipelineOps * 0.25
                       + trapRatio * 4.0;
             return r;

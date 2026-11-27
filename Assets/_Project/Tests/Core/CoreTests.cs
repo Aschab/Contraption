@@ -50,6 +50,33 @@ namespace Contraption.Core.Tests
         }
 
         [Test]
+        public void JoystickAndExchange()
+        {
+            var def = new MachineDefinition();
+            def.Registers.Add(new RegisterDef());
+            def.Controls.Add(new ControlDef
+            {
+                Kind = ControlKind.Joystick, Positions = ControlDef.JoystickPositions,
+                Actions =
+                {
+                    new ControlAction { Kind = ActionKind.PushLeft, Effects = { Fx(null, 2) } },
+                    new ControlAction { Kind = ActionKind.Center, Effects = { Fx(null, -1) } },
+                },
+            });
+            int[] s = { 0, 0 };
+            s = Step(def, s, new Move(0, ActionKind.PushLeft));
+            Assert.AreEqual(new[] { 2, 3 }, s);
+            Assert.IsFalse(MachineRules.TryApply(def, s, new Move(0, ActionKind.PushLeft), new int[2]), "already left");
+            s = Step(def, s, new Move(0, ActionKind.Center));
+            Assert.AreEqual(new[] { 1, 0 }, s);
+
+            def.Pipeline.Add(new TransferOp { Kind = OpKind.Exchange, Target = LiquidProperty.Viscosity, Source = LiquidProperty.Temperature });
+            var output = MachineRules.Process(def, s, new[] { new Liquid { Viscosity = 3, Temperature = 5 } });
+            Assert.AreEqual(5, output.Viscosity);
+            Assert.AreEqual(3, output.Temperature);
+        }
+
+        [Test]
         public void GeneratorIsDeterministic()
         {
             var a = MachineGenerator.Generate(42, new GeneratorSettings());
@@ -70,6 +97,7 @@ namespace Contraption.Core.Tests
                 var s = (int[])def.StartState.Clone();
                 foreach (var m in gen.Solve.Solution) s = Step(def, s, m);
                 Assert.IsTrue(MachineRules.MatchesManual(def, s), $"seed {seed} solution fails");
+                Assert.IsNull(MachineGenerator.FindAmbiguousRegister(def), $"seed {seed} displays are ambiguous");
             }
         }
 

@@ -7,6 +7,9 @@ namespace Contraption.Core
     // Value = Offset + Σ weight·register. Light is on when Value <Op> Threshold.
     public sealed class DisplayDef
     {
+        public const int BarSegments = 5;
+        public const int GlyphCount = Values.Levels;
+
         public DisplayKind Kind;
         public List<Term> Terms = new();
         public int Offset;

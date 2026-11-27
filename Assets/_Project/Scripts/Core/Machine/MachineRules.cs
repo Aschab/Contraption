@@ -13,7 +13,12 @@ namespace Contraption.Core
 
             int slot = def.ControlSlot(move.Control);
             int pos = state[slot];
-            if (move.Action == ActionKind.Increment) pos++;
+            if (ControlDef.IsJoystickAction(move.Action))
+            {
+                pos = ControlDef.JoystickTarget(move.Action);
+                if (pos == state[slot]) return false;
+            }
+            else if (move.Action == ActionKind.Increment) pos++;
             else if (move.Action == ActionKind.Decrement) pos--;
             if (pos < 0 || pos >= control.Positions)
             {
@@ -75,6 +80,22 @@ namespace Contraption.Core
 
         public static bool LightOn(DisplayDef d, int[] state) => Compare(DisplayValue(d, state), d.Op, d.Threshold);
 
+        // The distinguishable reading of a display: light on/off, lit bar segments, gauge value, glyph index.
+        public static int Readout(DisplayDef d, int[] state)
+        {
+            int v = DisplayValue(d, state);
+            switch (d.Kind)
+            {
+                case DisplayKind.Light: return LightOn(d, state) ? 1 : 0;
+                case DisplayKind.Glyph: return Values.Wrap(v, DisplayDef.GlyphCount);
+                case DisplayKind.Bar:
+                    DisplayRange(d, out int min, out int max);
+                    // Integer round-half-up of (v-min)/(max-min)*segments.
+                    return max > min ? ((v - min) * DisplayDef.BarSegments * 2 + (max - min)) / ((max - min) * 2) : 0;
+                default: return v;
+            }
+        }
+
         // Only registers (state[0..R)) are read, so a register-only array is a valid argument.
         public static Liquid Process(MachineDefinition def, int[] state, IReadOnlyList<Liquid> inputs)
         {
@@ -97,7 +118,8 @@ namespace Contraption.Core
                         t += amount;
                         break;
                     case OpKind.Swap:
-                        if (r >= op.Threshold)
+                    case OpKind.Exchange:
+                        if (op.Kind == OpKind.Exchange || r >= op.Threshold)
                         {
                             int s = l[op.Source];
                             l[op.Source] = t;

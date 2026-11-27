@@ -99,6 +99,7 @@ namespace Contraption.Core
                     case ControlKind.Lever: c.Positions = 2; break;
                     case ControlKind.Dial: c.Positions = rng.RangeInclusive(4, 6); c.Wraps = true; break;
                     case ControlKind.Knob: c.Positions = rng.RangeInclusive(3, 6); break;
+                    case ControlKind.Joystick: c.Positions = ControlDef.JoystickPositions; break;
                 }
                 def.Controls.Add(c);
             }
@@ -113,6 +114,12 @@ namespace Contraption.Core
                 if (c.Kind == ControlKind.Button)
                 {
                     c.Actions.Add(RandomAction(rng, s, def, ActionKind.Press, conditionSlots));
+                    continue;
+                }
+                if (c.Kind == ControlKind.Joystick)
+                {
+                    foreach (var a in new[] { ActionKind.PushUp, ActionKind.PushDown, ActionKind.PushLeft, ActionKind.PushRight, ActionKind.Center })
+                        c.Actions.Add(RandomAction(rng, s, def, a, conditionSlots));
                     continue;
                 }
                 var inc = RandomAction(rng, s, def, ActionKind.Increment, conditionSlots);
@@ -198,13 +205,20 @@ namespace Contraption.Core
             for (int i = 0; i < s.ExtraOps; i++) regs.Add(rng.Range(0, def.Registers.Count));
             rng.Shuffle(regs);
 
+            // Exchange ignores its register, so it may only fill extra slots; every register must drive some op.
+            var driven = s.OpKinds.FindAll(k => k != OpKind.Exchange);
+            if (driven.Count == 0) driven.Add(OpKind.Add);
+            var needed = new HashSet<int>();
+            for (int r = 0; r < def.Registers.Count; r++) needed.Add(r);
+
             foreach (int r in regs)
             {
+                var kind = needed.Remove(r) ? rng.Pick(driven) : rng.Pick(s.OpKinds);
                 var target = (LiquidProperty)rng.Range(0, Liquid.PropertyCount);
                 var source = (LiquidProperty)Values.Wrap((int)target + rng.RangeInclusive(1, Liquid.PropertyCount - 1), Liquid.PropertyCount);
                 def.Pipeline.Add(new TransferOp
                 {
-                    Kind = rng.Pick(s.OpKinds),
+                    Kind = kind,
                     Target = target,
                     Source = source,
                     Register = r,
@@ -239,31 +253,82 @@ namespace Contraption.Core
         private static void BuildDisplays(Rng rng, GeneratorSettings s, MachineDefinition def)
         {
             int regCount = def.Registers.Count;
-            int hidden = rng.RangeInclusive(0, Math.Min(s.MaxHiddenRegisters, regCount - 1));
-            var visible = new List<int>();
-            for (int r = 0; r < regCount; r++) visible.Add(r);
-            rng.Shuffle(visible);
-            visible.RemoveRange(0, hidden);
+            var order = new List<int>();
+            for (int r = 0; r < regCount; r++) order.Add(r);
+            rng.Shuffle(order);
 
-            int count = Math.Max(s.Displays, visible.Count);
+            int count = Math.Max(s.Displays, regCount);
             for (int i = 0; i < count; i++)
             {
                 var d = new DisplayDef { Kind = rng.Pick(s.DisplayKinds) };
-                int primary = i < visible.Count ? visible[i] : rng.Pick(visible);
+                int primary = i < regCount ? order[i] : rng.Range(0, regCount);
                 int weight = rng.Chance(s.InvertedDisplayChance) ? -1 : 1;
                 d.Terms.Add(new Term { Register = primary, Weight = weight });
-                if (visible.Count > 1 && rng.Chance(s.CombinedDisplayChance))
+                if (regCount > 1 && rng.Chance(s.CombinedDisplayChance))
                 {
                     int other = primary;
-                    while (other == primary) other = rng.Pick(visible);
+                    while (other == primary) other = rng.Range(0, regCount);
                     d.Terms.Add(new Term { Register = other, Weight = rng.Sign() });
                 }
-                if (weight < 0 && d.Terms.Count == 1) d.Offset = Values.Max; // inverted gauge still reads 0..5
+                if (weight < 0 && d.Terms.Count == 1) d.Offset = Values.Max; // inverted single display still reads 0..5
 
                 MachineRules.DisplayRange(d, out int min, out int max);
                 d.Op = Comparison.GreaterOrEqual;
                 d.Threshold = rng.RangeInclusive(min + 1, Math.Max(min + 1, max));
                 def.Displays.Add(d);
+            }
+
+            // Every register combination must read differently, so the state is always knowable from the displays.
+            // Add a direct single-register display for an ambiguous register until that holds.
+            var direct = s.DisplayKinds.FindAll(k => k != DisplayKind.Light);
+            if (direct.Count == 0) direct.Add(DisplayKind.Bar);
+            while (FindAmbiguousRegister(def) is int r)
+                def.Displays.Add(new DisplayDef { Kind = rng.Pick(direct), Terms = { new Term { Register = r, Weight = 1 } } });
+        }
+
+        // Returns a register that two indistinguishable register states differ in, or null if displays are unambiguous.
+        public static int? FindAmbiguousRegister(MachineDefinition def)
+        {
+            int regCount = def.Registers.Count;
+            int space = 1;
+            for (int i = 0; i < regCount; i++) space *= Values.Levels;
+            // Readouts fit in 6 bits (gauges span at most -10..10), so up to 10 displays pack exactly into a long.
+            bool packed = def.Displays.Count <= 10;
+            var seenPacked = new Dictionary<long, int>();
+            var seenText = new Dictionary<string, int>();
+            var state = new int[def.SlotCount()];
+            var other = new int[def.SlotCount()];
+            var text = new System.Text.StringBuilder();
+            for (int code = 0; code < space; code++)
+            {
+                DecodeRegisters(code, state, regCount);
+                int prev;
+                if (packed)
+                {
+                    long k = 0;
+                    foreach (var d in def.Displays) k = (k << 6) | (long)(MachineRules.Readout(d, state) + 32);
+                    if (!seenPacked.TryGetValue(k, out prev)) { seenPacked[k] = code; continue; }
+                }
+                else
+                {
+                    text.Clear();
+                    foreach (var d in def.Displays) text.Append(MachineRules.Readout(d, state)).Append(',');
+                    string k = text.ToString();
+                    if (!seenText.TryGetValue(k, out prev)) { seenText[k] = code; continue; }
+                }
+                DecodeRegisters(prev, other, regCount);
+                for (int r = 0; r < regCount; r++)
+                    if (state[r] != other[r]) return r;
+            }
+            return null;
+        }
+
+        private static void DecodeRegisters(int code, int[] into, int count)
+        {
+            for (int r = 0; r < count; r++)
+            {
+                into[r] = code % Values.Levels;
+                code /= Values.Levels;
             }
         }
 

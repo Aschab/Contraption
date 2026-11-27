@@ -10,6 +10,7 @@ namespace Contraption.Core
         Amplify,  // t = t * r / 2   (r = 2 is neutral)
         Siphon,   // move min(r, s) from source to target
         Swap,     // swap(t, s) if r >= threshold
+        Exchange, // swap(t, s) always; ignores its register
     }
 
     public sealed class TransferOp

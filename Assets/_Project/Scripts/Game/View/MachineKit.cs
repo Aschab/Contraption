@@ -18,7 +18,7 @@ namespace Contraption.Game
         [Header("Chassis (kit specific)")]
         public GameObject Segment, EndL, EndR, Foot, Bay, Top;
         [Header("Mechanisms (shared models)")]
-        public GameObject Button, Lever, Dial, Knob, Light, Bar, Gauge, Glyph, Tank, Pipe, Flange;
+        public GameObject Button, Lever, Dial, Knob, Joystick, Light, Bar, Gauge, Glyph, Tank, Pipe, Flange;
         [Header("Decor (placed on top of segments)")]
         public GameObject[] Decor;
 
