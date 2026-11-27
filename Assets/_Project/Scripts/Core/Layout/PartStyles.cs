@@ -44,7 +44,8 @@ namespace Contraption.Core
             [DisplayKind.Light] = Styles("Disp_Light", (1, 1), (1, 2), (2, 1), (2, 2)),
             [DisplayKind.Bar] = Styles("Disp_Bar", (1, 1), (1, 2), (1, 3), (1, 4), (2, 1), (3, 1), (4, 1)),
             [DisplayKind.Gauge] = Styles("Disp_Gauge", (1, 1), (2, 2), (2, 1), (3, 1)),
-            [DisplayKind.Glyph] = Styles("Disp_Glyph", (1, 1), (2, 1), (2, 2)),
+            [DisplayKind.Glyph] = Concat(Concat(Styles("Disp_Glyph", (1, 1), (2, 1), (2, 2)), Styles("Disp_Rune", (1, 1), (2, 2))),
+                Styles("Disp_Script", (2, 1), (3, 1))),
         };
 
         public static IReadOnlyList<PartStyle> For(ControlKind k) => ControlStyles[k];
@@ -66,7 +67,7 @@ namespace Contraption.Core
             for (int i = 0; i < sizes.Length; i++)
             {
                 var (w, h) = sizes[i];
-                bool single = w == 1 && h == 1 && baseName != "Ctl_Slider";
+                bool single = w == 1 && h == 1;
                 r[i] = new PartStyle(single ? baseName : $"{baseName}_{w}x{h}", w, h);
             }
             return r;

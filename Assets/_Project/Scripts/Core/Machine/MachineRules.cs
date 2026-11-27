@@ -81,13 +81,16 @@ namespace Contraption.Core
         public static bool LightOn(DisplayDef d, int[] state) => Compare(DisplayValue(d, state), d.Op, d.Threshold);
 
         // The distinguishable reading of a display: light on/off, lit bar segments, gauge value, glyph index.
+        // Glyphs never wrap: a display spanning N values has N distinct symbols.
         public static int Readout(DisplayDef d, int[] state)
         {
             int v = DisplayValue(d, state);
             switch (d.Kind)
             {
                 case DisplayKind.Light: return LightOn(d, state) ? 1 : 0;
-                case DisplayKind.Glyph: return Values.Wrap(v, DisplayDef.GlyphCount);
+                case DisplayKind.Glyph:
+                    DisplayRange(d, out int lo, out _);
+                    return v - lo;
                 case DisplayKind.Bar:
                     DisplayRange(d, out int min, out int max);
                     // Integer round-half-up of (v-min)/(max-min)*segments.

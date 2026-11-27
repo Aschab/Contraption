@@ -66,12 +66,11 @@ namespace Contraption.Game
             BuildChassis();
             BuildBase();
 
-            var glyphs = Glyphs.Make(def.Seed, Values.Levels + def.Controls.Count);
-            var labels = glyphs[Values.Levels..];
+            var glyphs = GlyphSet.Create(def);
             for (int i = 0; i < def.Displays.Count; i++)
-                _displays.Add(DisplayView.Create(kit, _root, Center(_layout.Displays[i]), def.Displays[i], _layout.Displays[i], glyphs[..Values.Levels]));
+                _displays.Add(DisplayView.Create(kit, _root, Center(_layout.Displays[i]), def.Displays[i], _layout.Displays[i], glyphs));
             for (int i = 0; i < def.Controls.Count; i++)
-                _controls.Add(ControlView.Create(kit, _root, Center(_layout.Controls[i]), i, def.Controls[i], _layout.Controls[i], labels[i]));
+                _controls.Add(ControlView.Create(kit, _root, Center(_layout.Controls[i]), i, def.Controls[i], _layout.Controls[i], glyphs.Labels[i]));
             foreach (var f in _layout.Fillers)
             {
                 var go = kit.Spawn(f.Style, _root, Center(f));

@@ -316,6 +316,27 @@ def test_lever():
     m.build("Moving", root, (-0.36, -0.12, 0))
     return root
 
+def disp_rune(s=1):
+    # CRT showing one line-drawn symbol; Unity draws the strokes centred on the "Screen" empty.
+    k = s; mb = MB(); plate(mb, s, s)
+    mb.box((0.84 * k, 0.1, 0.84 * k), (0, -0.07, 0), "Trim", 0.08 if s == 1 else 0.12)
+    mb.box((0.7 * k, 0.04, 0.7 * k), (0, -0.13, 0), "Dark", 0.04)
+    for x in (-1, 1): mb.cyl(0.035 * k, 0.04, (x * 0.3 * k, -0.13, -0.38 * k), "Glow", segs=6)
+    root = mb.build("Disp_Rune" + sz(s, s))
+    empty("Screen", root, (0, -0.16, 0))
+    return root
+
+def disp_script(w):
+    # Wide screen with a line of alien writing (one word per value).
+    mb = MB(); plate(mb, w, 1)
+    W = w * CELL - 0.3
+    mb.box((W, 0.1, 0.78), (0, -0.07, 0), "Metal", 0.04)
+    mb.box((W - 0.14, 0.04, 0.6), (0, -0.13, 0), "Dark", 0.02)
+    for i in range(3): mb.box((0.06, 0.03, 0.03), (-W / 2 + 0.2 + i * 0.1, -0.13, 0.35), "Trim", 0)
+    root = mb.build(f"Disp_Script_{w}x1")
+    empty("Screen", root, (0, -0.16, 0))
+    return root
+
 # ---------------------------------------------------------------- fillers (decorative panels)
 def corner_rivets(mb, w=1, h=1, slot="Metal"):
     hx, hz = w * CELL / 2 - 0.15, h * CELL / 2 - 0.15
@@ -606,6 +627,7 @@ SHARED = [
     *[(lambda w=w, h=h: disp_bar(w, h)) for (w, h) in ((1, 1), (1, 2), (1, 3), (1, 4), (2, 1), (3, 1), (4, 1))],
     *[(lambda w=w, h=h: disp_gauge(w, h)) for (w, h) in ((1, 1), (2, 2), (2, 1), (3, 1))],
     *[(lambda w=w, h=h: disp_glyph(w, h)) for (w, h) in ((1, 1), (2, 1), (2, 2))],
+    disp_rune, lambda: disp_rune(2), lambda: disp_script(2), lambda: disp_script(3),
     test_plunger, test_lever,
     fill_vent, fill_grille, fill_plate, fill_pipes, fill_porthole, fill_fan, fill_hatch,
     in_tank, in_flask, in_hopper, in_sphere, out_tank, out_vat, out_flask, vial, pipe, flange,

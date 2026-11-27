@@ -8,7 +8,6 @@ namespace Contraption.Core
     public sealed class DisplayDef
     {
         public const int BarSegments = 5;
-        public const int GlyphCount = Values.Levels;
 
         public DisplayKind Kind;
         public List<Term> Terms = new();

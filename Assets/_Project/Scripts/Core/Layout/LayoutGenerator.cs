@@ -44,10 +44,11 @@ namespace Contraption.Core
         private static PartStyle PickStyle(Rng rng, IReadOnlyList<PartStyle> styles, int rows, double largeChance)
         {
             var large = new List<PartStyle>();
-            PartStyle single = styles[0];
+            var single = new List<PartStyle>();
             foreach (var s in styles)
-                if (!s.IsSingle && s.H <= rows) large.Add(s);
-            return large.Count > 0 && rng.Chance(largeChance) ? rng.Pick(large) : single;
+                if (s.IsSingle) single.Add(s);
+                else if (s.H <= rows) large.Add(s);
+            return large.Count > 0 && (single.Count == 0 || rng.Chance(largeChance)) ? rng.Pick(large) : rng.Pick(single);
         }
 
         private static MachineLayout Shape(Rng rng, int cols, int rows)

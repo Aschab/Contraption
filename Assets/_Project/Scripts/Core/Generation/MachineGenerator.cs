@@ -16,7 +16,7 @@ namespace Contraption.Core
 
     public static class MachineGenerator
     {
-        public const int Version = 1;
+        public const int Version = 2;
 
         public static GenerationResult Generate(ulong seed, GeneratorSettings s)
         {
