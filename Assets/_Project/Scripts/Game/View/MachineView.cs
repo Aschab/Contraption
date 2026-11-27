@@ -262,24 +262,30 @@ namespace Contraption.Game
             return view != null && _controls.Contains(view);
         }
 
+        // Focus indices: controls first, then the test trigger (index ControlCount).
+        public bool TriggerFocused => Focus == _controls.Count;
+
         public void SetFocus(int index)
         {
-            if (_controls.Count == 0) return;
-            Focus = Values.Wrap(index, _controls.Count);
+            Focus = Values.Wrap(index, _controls.Count + 1);
             for (int i = 0; i < _controls.Count; i++) _controls[i].SetFocused(i == Focus);
+            _trigger.SetFocused(TriggerFocused);
         }
+
+        private Vector2 FocusPosition(int i) => i < _controls.Count
+            ? (Vector2)_controls[i].transform.localPosition
+            : (Vector2)(_trigger.transform.localPosition + _trigger.FocusPoint);
 
         // Spatial navigation: the nearest control roughly in the pressed direction.
         public void MoveFocus(Vector2 dir)
         {
-            if (_controls.Count == 0) return;
-            var from = (Vector2)_controls[Focus].transform.localPosition;
+            var from = FocusPosition(Focus);
             int best = -1;
             float bestScore = float.MaxValue;
-            for (int i = 0; i < _controls.Count; i++)
+            for (int i = 0; i <= _controls.Count; i++)
             {
                 if (i == Focus) continue;
-                var d = (Vector2)_controls[i].transform.localPosition - from;
+                var d = FocusPosition(i) - from;
                 float along = Vector2.Dot(d, dir);
                 if (along <= 0.05f) continue;
                 float score = along + Mathf.Abs(d.x * dir.y - d.y * dir.x) * 2f;

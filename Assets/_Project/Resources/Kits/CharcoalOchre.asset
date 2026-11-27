@@ -96,6 +96,8 @@ MonoBehaviour:
   - {fileID: 919132149155446097, guid: 96f99b7de83a34d588f481dc5b8e0a66, type: 3}
   - {fileID: 919132149155446097, guid: b9b7e69a4f11d4c5eb5814f9c3cac2ca, type: 3}
   - {fileID: 919132149155446097, guid: 0ee535c684fd946b481e93f8cb7f60dc, type: 3}
+  - {fileID: 919132149155446097, guid: 3efbe6cdf0957426191e8d977d0f9a60, type: 3}
+  - {fileID: 919132149155446097, guid: 1346590a368244311b088faf6cd7b77e, type: 3}
   - {fileID: 919132149155446097, guid: 5376ac5656b94439f8d8a35a6bf22903, type: 3}
   Decor:
   - {fileID: 919132149155446097, guid: bd2df1813a48a452e8401be9c687c708, type: 3}

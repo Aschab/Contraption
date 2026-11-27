@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 namespace Contraption.Game
 {
     // Mouse is optional: everything is reachable with keyboard or gamepad. Navigate with one hand, manipulate with the other.
+    // The test trigger is part of focus navigation; using or turning it runs a test.
     // Keys: arrows move focus, W/D turn up, S/A turn down (joystick: W/A/S/D push), Space use, Z undo, R reset, T test, [ ] input, Tab port.
     // Gamepad: d-pad/left stick focus, right stick turn/push, A use, X undo, Y reset, B test, LB/RB input, Select port.
     // Mouse: click use (joystick: click a side, centre to centre), right click / scroll back; click the big plunger/lever to test.
@@ -112,7 +113,7 @@ namespace Contraption.Game
         // Primary use: press a button, flip a lever, advance a dial/knob, centre a joystick.
         private static void Use(MachineSession s, MachineView v, int c)
         {
-            if (c >= v.ControlCount) return;
+            if (c >= v.ControlCount) { s.Test(); return; }
             var def = s.Definition.Controls[c];
             switch (def.Kind)
             {
@@ -128,7 +129,7 @@ namespace Contraption.Game
         // Up/right turn a control up, down/left turn it down; a joystick is pushed that way.
         private static void Turn(MachineSession s, MachineView v, Vector2Int dir)
         {
-            if (v.Focus >= v.ControlCount) return;
+            if (v.Focus >= v.ControlCount) { s.Test(); return; }
             var kind = s.Definition.Controls[v.Focus].Kind;
             if (kind == ControlKind.Button) { Use(s, v, v.Focus); return; }
             if (kind == ControlKind.Joystick) { Do(s, v, v.Focus, StickAction(dir)); return; }
