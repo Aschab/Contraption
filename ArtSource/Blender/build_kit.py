@@ -13,7 +13,8 @@ SCENE = "ContraptionKit"
 
 PALETTES = {
     "":   {"Body": (0.16, 0.15, 0.15), "Trim": (0.78, 0.52, 0.18), "Panel": (0.90, 0.84, 0.70), "Metal": (0.72, 0.55, 0.28),
-           "Accent": (0.35, 0.20, 0.12), "Glow": (0.25, 1.0, 0.85), "Dark": (0.08, 0.08, 0.09), "Glass": (0.7, 0.9, 0.95), "Liquid": (0.3, 0.9, 0.8)},
+           "Accent": (0.35, 0.20, 0.12), "Glow": (0.25, 1.0, 0.85), "Dark": (0.08, 0.08, 0.09), "Glass": (0.7, 0.9, 0.95), "Liquid": (0.3, 0.9, 0.8),
+           "Wood": (0.42, 0.28, 0.2), "Stone": (0.33, 0.29, 0.34), "Sky": (0.75, 0.85, 1.0)},
     "CO": {"Body": (0.16, 0.15, 0.15), "Trim": (0.78, 0.52, 0.18), "Panel": (0.90, 0.84, 0.70), "Metal": (0.60, 0.60, 0.62),
            "Accent": (0.35, 0.20, 0.12), "Glow": (0.25, 1.0, 0.85), "Dark": (0.08, 0.08, 0.09)},
     "TH": {"Body": (0.20, 0.38, 0.35), "Trim": (0.66, 0.27, 0.18), "Panel": (0.90, 0.84, 0.70), "Metal": (0.76, 0.56, 0.26),
@@ -649,6 +650,115 @@ def base_skid(kit):
     mb.box((0.22, D - 0.2, 0.36), (0, D / 2, -0.2), "Trim" if kit == "CO" else "Panel", 0.03)
     return mb.build(f"{kit}_Base_Skid")
 
+# ---------------------------------------------------------------- workshop: books and table (real-world metres)
+PAGE_W, PAGE_H, PAGE_TOP = 0.38, 0.52, 0.048
+
+def book(name, cover):
+    # Open book lying flat; page tops face +Z, page top edge toward +Y (away from the reader).
+    mb = MB()
+    for sx in (-1, 1):
+        mb.box((0.41, 0.56, 0.012), (sx * 0.215, 0, 0.006), cover, 0.004)
+        mb.box((PAGE_W, PAGE_H, 0.036), (sx * (PAGE_W / 2 + 0.012), 0, 0.03), "Panel", 0.01)
+        for sy in (-1, 1):   # brass corners
+            cx, cy = sx * 0.405, sy * 0.265
+            mb.box((0.07, 0.022, 0.016), (cx - sx * 0.025, cy, 0.01), "Trim", 0.004)
+            mb.box((0.022, 0.07, 0.016), (cx, cy - sy * 0.025, 0.01), "Trim", 0.004)
+    mb.box((0.03, 0.56, 0.02), (0, 0, 0.012), cover, 0.006)
+    mb.box((0.03, 0.06, 0.012), (0.43, 0, 0.012), "Metal", 0.004)          # clasp
+    mb.box((0.02, 0.12, 0.003), (0, -0.31, 0.003), "Dark", 0)                # bookmark ribbon
+    root = mb.build(name)
+    empty("PageL", root, (-(PAGE_W / 2 + 0.012), 0, PAGE_TOP))
+    empty("PageR", root, (PAGE_W / 2 + 0.012, 0, PAGE_TOP))
+    return root
+
+def book_sheet():
+    # A single page that turns around the spine (origin), lying over the right page.
+    mb = MB(); mb.box((PAGE_W, PAGE_H, 0.004), (PAGE_W / 2 + 0.012, 0, 0.002), "Panel", 0.001)
+    return mb.build("Book_Sheet")
+
+def table():
+    # Heavy workbench, origin on the floor; top surface at z = 1.0, 5 x 2.4 m.
+    mb = MB()
+    for i in range(8):
+        mb.box((5.0, 0.29, 0.1), (0, -1.05 + i * 0.3, 0.95), "Accent", 0.02)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            mb.box((0.16, 0.16, 0.9), (sx * 2.3, sy * 1.0, 0.45), "Accent", 0.02)
+            mb.box((0.26, 0.26, 0.12), (sx * 2.42, sy * 1.12, 0.95), "Trim", 0.02)
+            mb.cyl(0.03, 0.03, (sx * 2.42, sy * 1.12 - 0.13 * sy, 0.95), "Metal", segs=6)
+    for sy in (-1, 1): mb.box((4.6, 0.08, 0.14), (0, sy * 1.0, 0.78), "Accent", 0.01)
+    mb.box((1.2, 0.06, 0.22), (0, -1.08, 0.76), "Accent", 0.02)              # drawer front
+    mb.box((0.36, 0.05, 0.05), (0, -1.12, 0.76), "Metal", 0.01)
+    mb.box((5.04, 0.06, 0.08), (0, -1.21, 0.94), "Trim", 0.01)               # brass edge
+    return mb.build("Table")
+
+def workshop_room():
+    # Greybox workshop around the table (table at the origin, camera side = -Y). Lamp* empties become warm lights in Unity.
+    import random
+    rnd = random.Random(7)
+    mb = MB()
+    W, L, H = 30.0, 22.0, 10.0
+    for ix in range(int(W / 1.5)):                       # stone floor tiles
+        for iy in range(int(L / 1.5)):
+            x, y = -W / 2 + 0.75 + ix * 1.5, -L / 2 + 0.75 + iy * 1.5
+            mb.box((1.44, 1.44, 0.1), (x, y, -0.05 + rnd.uniform(-0.015, 0.015)), "Stone", 0.03)
+    for side in (-1, 1):                                  # side walls with timber posts
+        mb.box((0.4, L, H), (side * W / 2, 0, H / 2), "Stone", 0)
+        for y in range(-10, 11, 4): mb.box((0.5, 0.4, H), (side * (W / 2 - 0.25), y, H / 2), "Wood", 0.04)
+        mb.box((0.5, L, 0.4), (side * (W / 2 - 0.25), 0, 7.0), "Wood", 0.04)
+    mb.box((W, 0.4, H), (0, L / 2, H / 2), "Stone", 0)
+    mb.box((W, 0.4, H), (0, -L / 2, H / 2), "Stone", 0)
+    for x in range(-12, 13, 4): mb.box((0.4, 0.5, H), (x, L / 2 - 0.25, H / 2), "Wood", 0.04)
+    for y in range(-9, 10, 4):                            # roof trusses
+        mb.box((W, 0.4, 0.5), (0, y, H - 0.25), "Wood", 0.05)
+        mb.box((0.3, 0.3, 2.5), (0, y, H + 1.0), "Wood", 0.03)
+    for y in (-6, 4):                                     # tall windows (left wall) and a skylight
+        mb.box((0.3, 2.6, 4.2), (-W / 2 + 0.3, y, 5.0), "Wood", 0.05)
+        mb.box((0.32, 2.2, 3.8), (-W / 2 + 0.32, y, 5.0), "Sky", 0)
+        mb.box((0.34, 0.12, 3.8), (-W / 2 + 0.34, y, 5.0), "Wood", 0)
+        mb.box((0.34, 2.2, 0.12), (-W / 2 + 0.34, y, 5.6), "Wood", 0)
+    mb.box((3.0, 2.0, 0.1), (2, 4, H - 0.05), "Sky", 0)
+    mb.box((14, 0.35, 0.45), (0, 4, 6.6), "Trim", 0.04)    # crane beam with chains
+    for x in (-4, 0, 3):
+        mb.box((0.06, 0.06, 2.4), (x, 4, 5.2), "Metal", 0)
+        mb.box((0.5, 0.5, 0.5), (x, 4, 3.8), "Metal", 0.06)
+    mb.box((14, 1.4, 0.12), (0, L / 2 - 1.2, 1.0), "Wood", 0.03)   # back workbench
+    for x in range(-6, 7, 3):
+        mb.box((0.14, 1.2, 1.0), (x, L / 2 - 1.2, 0.5), "Wood", 0.02)
+        mb.box((1.2, 0.08, 0.5), (x + 1.5, L / 2 - 1.9, 0.6), "Accent", 0.02)
+        mb.box((0.3, 0.05, 0.05), (x + 1.5, L / 2 - 1.95, 0.6), "Trim", 0.01)
+    for z in (1.2, 2.4, 3.6):                             # shelves with bottles (right wall)
+        mb.box((0.8, 12, 0.08), (W / 2 - 0.8, 2, z), "Wood", 0.02)
+        for i in range(14):
+            y = -3.5 + i * 0.8 + rnd.uniform(-0.1, 0.1); h = rnd.uniform(0.3, 0.55)
+            mb.cyl(0.13, h, (W / 2 - 0.8, y, z + 0.04 + h / 2), "Glass", segs=8, axis="Z")
+            mb.cyl(0.11, h * 0.7, (W / 2 - 0.8, y, z + 0.04 + h * 0.35), rnd.choice(["Glow", "Liquid", "Trim", "Accent"]), segs=8, axis="Z")
+            mb.cyl(0.05, 0.1, (W / 2 - 0.8, y, z + 0.09 + h), "Wood", segs=6, axis="Z")
+    for i in range(10):                                   # crates and barrels
+        x, y = rnd.choice([(-12, -8), (-12, 8), (10, -8), (9, 9)])
+        x += rnd.uniform(-2, 2); y += rnd.uniform(-1.5, 1.5)
+        if i % 3 == 0:
+            mb.cyl(0.45, 1.1, (x, y, 0.55), "Wood", segs=10, axis="Z")
+            for z in (0.2, 0.9): mb.cyl(0.47, 0.08, (x, y, z), "Metal", segs=10, axis="Z")
+        else:
+            sz = rnd.uniform(0.7, 1.1)
+            mb.box((sz, sz, sz), (x, y, sz / 2), "Wood", 0.04)
+            mb.box((sz + 0.04, sz + 0.04, 0.1), (x, y, sz * 0.8), "Trim", 0.02)
+    mb.box((2.0, 1.2, 0.1), (6, 1, 0.9), "Metal", 0.02)   # cart with gears
+    for sx in (-0.9, 0.9):
+        for sy in (-0.5, 0.5):
+            mb.box((0.08, 0.08, 0.9), (6 + sx, 1 + sy, 0.45), "Metal", 0)
+            mb.cyl(0.14, 0.08, (6 + sx, 1 + sy, 0.14), "Dark", segs=8, axis="X")
+    for gx in (-0.5, 0.3):
+        mb.cyl(0.4, 0.15, (6 + gx, 1, 1.35), "Trim", segs=12, axis="Y", bevel=0.02)
+        mb.cyl(0.15, 0.17, (6 + gx, 1, 1.35), "Dark", segs=8, axis="Y")
+    root = mb.build("Workshop_Room")
+    for i, (x, y, z) in enumerate([(-6, 8, 3.2), (6, 8, 3.2), (-8, -2, 4.5), (0, 1.5, 4.5), (12, 2, 4.2)]):
+        lamp = MB(); lamp.cyl(0.25, 0.2, (0, 0, 0), "Metal", segs=8, axis="Z", r2=0.12); lamp.sphere(0.12, (0, 0, -0.12), "Glow")
+        lamp.box((0.03, 0.03, H - z), (0, 0, (H - z) / 2), "Metal", 0)
+        lamp.build(f"Lamp{i}", root, (x, y, z))
+    return root
+
 # ---------------------------------------------------------------- catalog
 SHARED = [
     ctl_button, lambda: ctl_button(2, 1), lambda: ctl_button(2, 2),
@@ -662,6 +772,7 @@ SHARED = [
     *[(lambda w=w, h=h: disp_glyph(w, h)) for (w, h) in ((1, 1), (2, 1), (2, 2))],
     disp_rune, lambda: disp_rune(2), lambda: disp_script(2), lambda: disp_script(3),
     test_plunger, test_lever, lamp,
+    lambda: book("Book_Manual", "Accent"), lambda: book("Book_Log", "Dark"), book_sheet, table, workshop_room,
     fill_vent, fill_grille, fill_plate, fill_pipes, fill_porthole, fill_fan, fill_hatch,
     in_tank, in_flask, in_hopper, in_sphere, out_tank, out_vat, out_flask, vial, pipe, flange,
 ]

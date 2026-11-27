@@ -27,7 +27,10 @@ namespace Contraption.Game
             if (GUILayout.Button("▶", GUILayout.Width(26))) lab.StepSeed(1);
             if (GUILayout.Button("Random", GUILayout.Width(64))) lab.RandomSeed();
             GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
             if (GUILayout.Button("<b>GENERATE</b>", Rich(GUI.skin.button), GUILayout.Height(28))) lab.Generate();
+            if (GUILayout.Button("Intro", GUILayout.Width(60), GUILayout.Height(28))) lab.PlayIntro();
+            GUILayout.EndHorizontal();
             if (lab.Kits != null)
             {
                 GUILayout.BeginHorizontal();

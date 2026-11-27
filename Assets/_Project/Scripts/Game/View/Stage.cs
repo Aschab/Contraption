@@ -4,22 +4,27 @@ using UnityEngine.Rendering.Universal;
 
 namespace Contraption.Game
 {
-    // Workshop backdrop, lighting and post-processing (bloom for glows, warm grade, vignette), built at runtime.
+    // Fill light and post-processing (bloom for glows, warm grade, vignette, background blur), built at runtime.
     public static class Stage
     {
+        private static DepthOfField _dof;
+
+        // Background blur once the camera sits at the table: sharp up to the machine, blurred beyond.
+        public static void SetFocus(float distance, float amount)
+        {
+            if (_dof == null) return;
+            _dof.active = amount > 0.01f;
+            _dof.gaussianStart.Override(distance + 0.6f);
+            _dof.gaussianEnd.Override(distance + 0.6f + Mathf.Lerp(30f, 4f, amount));
+            _dof.gaussianMaxRadius.Override(Mathf.Lerp(0.5f, 1.5f, amount));
+        }
+
         public static void Build(Camera cam)
         {
             var root = new GameObject("Stage").transform;
-            Art.Paint(Art.Prim(PrimitiveType.Cube, root, new Vector3(0f, -0.05f, 4f), new Vector3(60f, 0.1f, 16f), new Color(0.36f, 0.27f, 0.22f)).GetComponent<Renderer>(),
-                new Color(0.36f, 0.27f, 0.22f), Color.black, 0.15f);
-            Art.Paint(Art.Prim(PrimitiveType.Cube, root, new Vector3(0f, 6f, 9f), new Vector3(60f, 14f, 0.2f), new Color(0.22f, 0.15f, 0.12f)).GetComponent<Renderer>(),
-                new Color(0.22f, 0.15f, 0.12f), Color.black, 0.1f);
-            foreach (float x in new[] { -9f, 9f })
-            {
-                var window = Art.Prim(PrimitiveType.Cube, root, new Vector3(x, 5f, 8.85f), new Vector3(2.2f, 3.6f, 0.05f), Color.black);
-                Art.Paint(window.GetComponent<Renderer>(), new Color(1f, 0.7f, 0.35f), new Color(1f, 0.55f, 0.2f) * 2.2f);
-            }
-
+            // The sun comes in steeply (through the open roof) so the workshop walls don't shade the table.
+            foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+                if (l.type == LightType.Directional) l.transform.rotation = Quaternion.Euler(62f, -30f, 0f);
             var fill = new GameObject("Fill light").AddComponent<Light>();
             fill.transform.SetParent(root, false);
             fill.type = LightType.Directional;
@@ -45,6 +50,10 @@ namespace Contraption.Game
             var vignette = profile.Add<Vignette>(true);
             vignette.intensity.Override(0.28f);
             vignette.smoothness.Override(0.5f);
+            _dof = profile.Add<DepthOfField>(true);
+            _dof.mode.Override(DepthOfFieldMode.Gaussian);
+            _dof.highQualitySampling.Override(true);
+            _dof.active = false;
             volume.sharedProfile = profile;
 
             var data = cam.GetUniversalAdditionalCameraData();

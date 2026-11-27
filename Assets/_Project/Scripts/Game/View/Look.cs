@@ -12,6 +12,8 @@ namespace Contraption.Game
         public Color Body, Trim, Panel, Metal, Accent, Glow, Dark, Glass, Liquid;
         // The machine's other glow colour (same as Glow when the scheme has one).
         public Color Glow2;
+        // Workshop surfaces (same for every machine).
+        public Color Wood = new(0.42f, 0.28f, 0.2f), Stone = new(0.33f, 0.29f, 0.34f), Sky = new(0.75f, 0.85f, 1f);
 
         private readonly Dictionary<string, Material> _materials = new();
         private readonly Dictionary<(int, int), Look> _variants = new();
@@ -73,6 +75,7 @@ namespace Contraption.Game
         {
             MachineKit.Slot.Body => Body, MachineKit.Slot.Trim => Trim, MachineKit.Slot.Panel => Panel, MachineKit.Slot.Metal => Metal,
             MachineKit.Slot.Accent => Accent, MachineKit.Slot.Glow => Glow, MachineKit.Slot.Dark => Dark, MachineKit.Slot.Glass => Glass,
+            MachineKit.Slot.Wood => Wood, MachineKit.Slot.Stone => Stone, MachineKit.Slot.Sky => Sky,
             _ => Liquid,
         };
 
@@ -84,7 +87,7 @@ namespace Contraption.Game
             var c = ColorOf(s);
             if (!glass)
             {
-                m.SetFloat("_Grime", s == MachineKit.Slot.Glow ? 0f : s == MachineKit.Slot.Metal ? 0.45f : 0.6f);
+                m.SetFloat("_Grime", s is MachineKit.Slot.Glow or MachineKit.Slot.Sky ? 0f : s == MachineKit.Slot.Metal ? 0.45f : s is MachineKit.Slot.Wood or MachineKit.Slot.Stone ? 0.9f : 0.6f);
                 m.SetFloat("_Wear", s == MachineKit.Slot.Glow ? 0f : 0.6f);
             }
             m.SetColor("_BaseColor", c);
@@ -92,7 +95,7 @@ namespace Contraption.Game
             m.SetFloat("_Metallic", s == MachineKit.Slot.Metal ? 0.5f : 0f);
             m.EnableKeyword("_EMISSION");
             m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            m.SetColor("_EmissionColor", s == MachineKit.Slot.Glow ? c * 1.5f : Color.black);
+            m.SetColor("_EmissionColor", s == MachineKit.Slot.Glow ? c * 1.5f : s == MachineKit.Slot.Sky ? c * 2.5f : Color.black);
             if (s == MachineKit.Slot.Glass) MakeTransparent(m, c.a);
             return m;
         }

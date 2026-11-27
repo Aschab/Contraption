@@ -28,6 +28,13 @@ Saved levels store the full definition (seed + generator version are metadata on
 ## Lab scene
 Generate (seed + settings) → play/test the machine as the player would → inspect metrics and the hidden solution → tweak → save to `Assets/_Project/Data/Levels`.
 
+## Workshop & books
+- The machine stands on a work table in an alien workshop (Share/Workshop, tWorkshop). Each level opens with a camera flight through the workshop that lands on the table; then the background blurs (depth of field).
+- **Manual** (book, front-left of the table): one example per page — input row(s), an arrow, the expected output row; a wax seal once that example is proven.
+- **Logbook** (book, front-right): every test as IN rows (input liquid icons) + OUT row, two entries per page; entries can be deleted. OUT values that differ from the manual's answer for the same inputs are orange.
+- Values are written as 2×2 grids (0 empty … 4 full) under five alien trait symbols (fixed for the whole game); each input liquid has a cog icon in its colour with dots for its place in the pool.
+- Either book can be lifted into view (manual on the left half, logbook on the right) or put back, independently; pages turn.
+
 ## Platform & input
 PC (Steam) first, consoles possible. Mouse is optional: every control must be reachable via keyboard/gamepad focus navigation.
 

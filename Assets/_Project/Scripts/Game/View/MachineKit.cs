@@ -10,7 +10,7 @@ namespace Contraption.Game
     [CreateAssetMenu(menuName = "Contraption/Machine Kit")]
     public sealed class MachineKit : ScriptableObject
     {
-        public enum Slot { Body, Trim, Panel, Metal, Accent, Glow, Dark, Glass, Liquid }
+        public enum Slot { Body, Trim, Panel, Metal, Accent, Glow, Dark, Glass, Liquid, Wood, Stone, Sky }
 
         public string DisplayName;
         // Kit-specific pieces are named "<Prefix>_<Name>" (chassis tiles, tops, bases); the rest are shared.

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Contraption.Game
 {
-    // Placeholder player HUD (IMGUI): the human-made analyzer, the manual and the test log.
+    // Placeholder player HUD (IMGUI): input selection and the last output. The manual and log are books on the table.
     // Will become diegetic (in-world manual + analyzer device) once the look is settled.
     public sealed class AnalyzerHud
     {
@@ -38,39 +38,9 @@ namespace Contraption.Game
             else GUILayout.Label("—");
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(8);
-            GUILayout.Label("<b>MANUAL</b>  (test each entry to prove the fix)", Rich(GUI.skin.label));
-            for (int e = 0; e < def.Manual.Count; e++)
-            {
-                var entry = def.Manual[e];
-                GUILayout.BeginVertical(GUI.skin.box);
-                foreach (var l in entry.Inputs)
-                {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label("in", GUILayout.Width(30));
-                    LiquidRow(l);
-                    GUILayout.EndHorizontal();
-                }
-                GUILayout.BeginHorizontal();
-                GUILayout.Label(s.Verified[e] ? "<color=lime>✓</color>" : "out", Rich(GUI.skin.label), GUILayout.Width(30));
-                LiquidRow(entry.Output);
-                GUILayout.EndHorizontal();
-                GUILayout.EndVertical();
-            }
-
-            GUILayout.Space(8);
-            GUILayout.Label("<b>TEST LOG</b>", Rich(GUI.skin.label));
-            foreach (var rec in s.Log)
-            {
-                GUILayout.BeginHorizontal();
-                GUILayout.Label("#" + string.Join("+", rec.Inputs), GUILayout.Width(50));
-                LiquidRow(rec.Output);
-                GUILayout.EndHorizontal();
-            }
-
             GUILayout.EndScrollView();
             MachineView.AnimateTests = GUILayout.Toggle(MachineView.AnimateTests, "Animate tests (any key skips)");
-            GUILayout.Label("Arrows select · W/S (A/D) turn or push · Space use/centre\nZ undo · R reset · T test · click / right-click / scroll");
+            GUILayout.Label("Arrows select · W/S (A/D) turn or push · Space use/centre\nZ undo · R reset · T test · Q manual · E logbook\nBook up: ←→ pages · ↑↓ entry · Del remove · Esc close");
             GUILayout.EndArea();
         }
 

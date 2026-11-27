@@ -20,6 +20,10 @@ namespace Contraption.Game
         private readonly LabPanel _panel = new();
         private MachineView _view;
         private MachineKit[] _kits;
+        private Workshop _workshop;
+        private BookDesk _desk;
+        private IntroFlight _intro;
+        private float _blur;
         private bool _panelVisible = true;
         private float _uiScale = 1f;
 
@@ -36,7 +40,6 @@ namespace Contraption.Game
         {
             if (_camera == null) _camera = Camera.main;
             Stage.Build(_camera);
-            _view = new GameObject("MachineView").AddComponent<MachineView>();
             _kits = Resources.LoadAll<MachineKit>("Kits");
             System.Array.Sort(_kits, (a, b) => string.CompareOrdinal(a.name, b.name));
             if (_kits.Length == 0)
@@ -46,9 +49,23 @@ namespace Contraption.Game
                 return;
             }
             KitIndex = Mathf.Clamp(PlayerPrefs.GetInt(KitKey, 0), 0, _kits.Length - 1);
+            _workshop = new Workshop(_kits[KitIndex]);
+            _view = new GameObject("MachineView").AddComponent<MachineView>();
+            _view.transform.SetPositionAndRotation(_workshop.MachineAnchor, Quaternion.identity);
+            _view.transform.localScale = Vector3.one * Workshop.MachineScale;
+            _desk = new BookDesk(_kits[KitIndex], _workshop.Root, _camera, _workshop.ManualRest, _workshop.LogRest);
             Settings = LoadSettings();
             SeedText = PlayerPrefs.GetString(SeedKey, "1");
             Generate();
+            PlayIntro();
+        }
+
+        public void PlayIntro()
+        {
+            if (_intro != null) return;
+            _blur = 0f;
+            Stage.SetFocus(0f, 0f);
+            _intro = IntroFlight.Play(_camera, TableView, () => _intro = null);
         }
 
         private void Update()
@@ -59,10 +76,19 @@ namespace Contraption.Game
             float left = AnalyzerHud.Width * _uiScale, right = _panelVisible ? LabPanel.Width * _uiScale : 0f;
             _camera.rect = new Rect(left / Screen.width, 0f, 1f - (left + right) / Screen.width, 1f);
 
+            if (_intro != null)
+            {
+                if ((Keyboard.current?.anyKey.wasPressedThisFrame ?? false) || (Mouse.current?.leftButton.wasPressedThisFrame ?? false)
+                    || (Gamepad.current?.buttonSouth.wasPressedThisFrame ?? false))
+                    _intro.Skip();
+                return;
+            }
             if (Session != null)
             {
                 if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && !OverGui(GuiMouse())) GUIUtility.keyboardControl = 0;
-                _input.Tick(Session, _view, _camera, GUIUtility.keyboardControl == 0, OverGui);
+                bool keyboardFree = GUIUtility.keyboardControl == 0;
+                _desk.Tick(_camera, OverGui, keyboardFree);
+                _input.Tick(Session, _view, _camera, keyboardFree, !_desk.CapturesArrows, OverGui);
             }
         }
 
@@ -131,6 +157,7 @@ namespace Contraption.Game
             UpdateGoalDistance();
             _input.ActivePort = 0;
             _view.Build(Session, _kits[KitIndex]);
+            _desk.Bind(Session);
             Frame();
         }
 
@@ -217,13 +244,26 @@ namespace Contraption.Game
             Status = "Start state replaced with the current state.";
         }
 
-        private void Frame()
+        // Looking slightly down at the table: the machine plus both books at rest.
+        private (Vector3 pos, Vector3 look) TableView()
         {
             var b = _view.Bounds;
+            foreach (var rest in new[] { _workshop.ManualRest, _workshop.LogRest })
+                b.Encapsulate(new Bounds(rest, new Vector3(0.9f, 0.05f, 0.6f)));
+            var dir = Quaternion.Euler(22f, 0f, 0f) * Vector3.forward;
             float halfV = Mathf.Tan(_camera.fieldOfView * 0.5f * Mathf.Deg2Rad);
-            float dist = Mathf.Max((b.extents.y + 0.4f) / halfV, (b.extents.x + 0.4f) / (halfV * _camera.aspect)) + 0.5f;
-            _camera.transform.position = b.center + new Vector3(0f, 0.8f, -dist);
-            _camera.transform.LookAt(b.center);
+            float margin = 0.12f;
+            float dist = Mathf.Max((b.extents.y + b.extents.z * 0.4f + margin) / halfV, (b.extents.x + margin) / (halfV * _camera.aspect)) + b.extents.z;
+            return (b.center - dir * dist, b.center);
+        }
+
+        private void Frame()
+        {
+            if (_intro != null) return;
+            var (pos, look) = TableView();
+            _camera.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(look - pos));
+            _blur = Mathf.MoveTowards(_blur, 1f, Time.deltaTime / 1.2f);
+            Stage.SetFocus(Vector3.Distance(pos, _view.Bounds.center), _blur);
         }
 
         private void LateUpdate()

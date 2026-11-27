@@ -15,7 +15,8 @@ namespace Contraption.Game
         public int ActivePort;
         private Vector2Int _lastLeft, _lastRight;
 
-        public void Tick(MachineSession s, MachineView v, Camera cam, bool keyboardFree, Func<Vector2, bool> overGui)
+        // arrowsFree: false while a book is up (arrows/d-pad turn its pages instead of moving focus).
+        public void Tick(MachineSession s, MachineView v, Camera cam, bool keyboardFree, bool arrowsFree, Func<Vector2, bool> overGui)
         {
             if (v.Animating && AnyPress()) v.Skip();
 
@@ -50,10 +51,10 @@ namespace Contraption.Game
             var kb = Keyboard.current;
             if (kb != null && keyboardFree)
             {
-                if (kb.leftArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.left);
-                if (kb.rightArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.right);
-                if (kb.upArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.up);
-                if (kb.downArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.down);
+                if (arrowsFree && kb.leftArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.left);
+                if (arrowsFree && kb.rightArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.right);
+                if (arrowsFree && kb.upArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.up);
+                if (arrowsFree && kb.downArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.down);
                 if (kb.wKey.wasPressedThisFrame) Turn(s, v, Vector2Int.up);
                 if (kb.sKey.wasPressedThisFrame) Turn(s, v, Vector2Int.down);
                 if (kb.aKey.wasPressedThisFrame) Turn(s, v, Vector2Int.left);
@@ -71,10 +72,10 @@ namespace Contraption.Game
             if (pad != null)
             {
                 var left = Flick(pad.leftStick.ReadValue(), ref _lastLeft);
-                if (pad.dpad.left.wasPressedThisFrame) left = Vector2Int.left;
-                if (pad.dpad.right.wasPressedThisFrame) left = Vector2Int.right;
-                if (pad.dpad.up.wasPressedThisFrame) left = Vector2Int.up;
-                if (pad.dpad.down.wasPressedThisFrame) left = Vector2Int.down;
+                if (arrowsFree && pad.dpad.left.wasPressedThisFrame) left = Vector2Int.left;
+                if (arrowsFree && pad.dpad.right.wasPressedThisFrame) left = Vector2Int.right;
+                if (arrowsFree && pad.dpad.up.wasPressedThisFrame) left = Vector2Int.up;
+                if (arrowsFree && pad.dpad.down.wasPressedThisFrame) left = Vector2Int.down;
                 if (left != Vector2Int.zero) v.MoveFocus(left);
                 var right = Flick(pad.rightStick.ReadValue(), ref _lastRight);
                 if (right != Vector2Int.zero) Turn(s, v, right);

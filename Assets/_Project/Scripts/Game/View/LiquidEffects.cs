@@ -16,7 +16,7 @@ namespace Contraption.Game
         private Transform[] _ice;
         private Light _light;
         private Liquid? _value;
-        private float _width;
+        private float _width, _scale = 1f;
 
         // World Y of the liquid surface, set by the container every frame.
         public float Level { get; set; }
@@ -36,20 +36,22 @@ namespace Contraption.Game
             var b = Bounds;
             _width = Mathf.Max(0.15f, Mathf.Min(b.size.x, b.size.z));
             float w = _width;
+            // Effects were tuned for ~0.45 m wide containers; scale speeds and sizes with the container.
+            float k = _scale = Mathf.Clamp(w / 0.45f, 0.1f, 2f);
             var root = new GameObject("Effects").transform;
             root.SetParent(transform, false);
 
-            _steam = Particles(root, "Steam", Alpha(kit), new Color(1f, 1f, 1f, 0.35f), 6f, 2f, 0.35f, w * 0.5f, new Vector3(w * 0.7f, 0.01f, w * 0.5f), 0f);
+            _steam = Particles(root, "Steam", Alpha(kit), new Color(1f, 1f, 1f, 0.35f), 6f, 2f, 0.35f * k, w * 0.5f, new Vector3(w * 0.7f, 0.01f, w * 0.5f), 0f);
             Grow(_steam, 0.5f, 1.8f);
-            _bubbles = Particles(root, "Bubbles", Alpha(kit), new Color(1f, 1f, 1f, 0.7f), 30f, 1f, 0.5f, w * 0.08f, new Vector3(w * 0.7f, 0.01f, 0.01f), 0f);
-            _mist = Particles(root, "Mist", Alpha(kit), new Color(0.85f, 0.95f, 1f, 0.25f), 5f, 2.5f, -0.08f, w * 0.6f, new Vector3(w * 1.2f, 0.3f, w), 0f);
+            _bubbles = Particles(root, "Bubbles", Alpha(kit), new Color(1f, 1f, 1f, 0.7f), 30f, 1f, 0.5f * k, w * 0.08f, new Vector3(w * 0.7f, 0.01f, 0.01f), 0f);
+            _mist = Particles(root, "Mist", Alpha(kit), new Color(0.85f, 0.95f, 1f, 0.25f), 5f, 2.5f, -0.08f * k, w * 0.6f, new Vector3(w * 1.2f, 0.3f, w), 0f);
             Grow(_mist, 0.6f, 1.4f);
-            _sparks = Particles(root, "Sparks", Additive(kit), new Color(1f, 0.6f, 0.2f, 1f), 8f, 0.6f, 1.2f, 0.04f, new Vector3(w * 0.7f, 0.01f, w * 0.5f), 0.6f);
+            _sparks = Particles(root, "Sparks", Additive(kit), new Color(1f, 0.6f, 0.2f, 1f), 8f, 0.6f, 1.2f * k, 0.04f * k, new Vector3(w * 0.7f, 0.01f, w * 0.5f), 0.6f * k);
             var sm = _sparks.main;
-            sm.startSpeed = new ParticleSystem.MinMaxCurve(0.6f, 1.6f);
+            sm.startSpeed = new ParticleSystem.MinMaxCurve(0.6f * k, 1.6f * k);
             var ss = _sparks.shape;
             ss.randomDirectionAmount = 0.4f;
-            _flames = Particles(root, "Flames", Additive(kit), new Color(1f, 0.55f, 0.15f, 0.8f), 25f, 0.6f, 0.5f, w * 0.55f, new Vector3(w * 0.7f, 0.01f, w * 0.5f), -0.1f);
+            _flames = Particles(root, "Flames", Additive(kit), new Color(1f, 0.55f, 0.15f, 0.8f), 25f, 0.6f, 0.5f * k, w * 0.55f, new Vector3(w * 0.7f, 0.01f, w * 0.5f), -0.1f);
             Grow(_flames, 1f, 0.2f);
             var fc = _flames.colorOverLifetime;
             fc.enabled = true;
@@ -57,7 +59,7 @@ namespace Contraption.Game
             g.SetKeys(new[] { new GradientColorKey(new Color(1f, 0.9f, 0.4f), 0f), new GradientColorKey(new Color(1f, 0.35f, 0.05f), 0.6f), new GradientColorKey(Color.red, 1f) },
                 new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0.6f, 0.5f), new GradientAlphaKey(0f, 1f) });
             fc.color = g;
-            _glints = Particles(root, "Glints", Additive(kit), Color.white, 10f, 0.3f, 0f, 0.07f, new Vector3(w * 0.8f, 0.4f, 0.01f), 0f);
+            _glints = Particles(root, "Glints", Additive(kit), Color.white, 10f, 0.3f, 0f, 0.07f * k, new Vector3(w * 0.8f, 0.4f, 0.01f), 0f);
 
             _ice = new Transform[3];
             for (int i = 0; i < _ice.Length; i++)
@@ -70,7 +72,7 @@ namespace Contraption.Game
             _light = new GameObject("Glow").AddComponent<Light>();
             _light.transform.SetParent(root, false);
             _light.type = LightType.Point;
-            _light.range = 2.5f;
+            _light.range = 2.5f * k;
             _light.shadows = LightShadows.None;
             Show(null, 0f);
         }
@@ -114,7 +116,7 @@ namespace Contraption.Game
             // Bubbles rise along the front glass and pop at the surface.
             _bubbles.transform.position = front;
             var bm = _bubbles.main;
-            bm.startLifetime = Mathf.Max(0.1f, (level - b.min.y) / 0.5f);
+            bm.startLifetime = Mathf.Max(0.1f, (level - b.min.y) / (0.5f * _scale));
             _glints.transform.position = new Vector3(b.center.x, Mathf.Lerp(b.min.y, level, 0.5f), b.min.z + 0.02f);
             float t = Time.time;
             for (int i = 0; i < _ice.Length; i++)
@@ -123,7 +125,7 @@ namespace Contraption.Game
                 _ice[i].position = new Vector3(b.center.x + x + Mathf.Sin(t * 0.7f + i * 2f) * 0.03f, level - _width * 0.05f + Mathf.Sin(t * 1.3f + i) * 0.015f, b.min.z + _width * 0.3f);
                 _ice[i].rotation = Quaternion.Euler(10f * Mathf.Sin(t + i), i * 37f + t * 6f, 8f * Mathf.Cos(t * 0.8f + i));
             }
-            _light.transform.position = top + new Vector3(0f, 0.1f, -0.5f);
+            _light.transform.position = top + new Vector3(0f, 0.1f, -0.5f) * _scale;
             _light.intensity = (l.Refraction >= 4 ? 2.5f : 1.2f) * (0.75f + 0.25f * Mathf.PerlinNoise(t * 3f, GetInstanceID()));
         }
 

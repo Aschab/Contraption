@@ -9,7 +9,7 @@ namespace Contraption.Core
         public Liquid Output;
     }
 
-    // One play-through of a machine: current state, undo history, selected inputs, test log, win tracking.
+    // One play-through of a machine: current state, undo history, selected inputs, test log (oldest first), win tracking.
     // The machine counts as fixed once every manual entry has been tested successfully without touching a control since.
     public sealed class MachineSession
     {
@@ -25,6 +25,7 @@ namespace Contraption.Core
         public List<TestRecord> Log { get; } = new();
         public Liquid? LastOutput { get; private set; }
         public int Moves { get; private set; }
+        public const int MaxLog = 200;
         public event Action Changed;
         // Raised by Test before Changed, so views can animate the run.
         public event Action Tested;
@@ -69,6 +70,23 @@ namespace Contraption.Core
             StateChanged();
         }
 
+        public void DeleteLog(int index)
+        {
+            if (index < 0 || index >= Log.Count) return;
+            Log.RemoveAt(index);
+            Changed?.Invoke();
+        }
+
+        // The manual entry whose inputs match a log record (any order), or -1.
+        public int ManualEntryFor(TestRecord record)
+        {
+            var inputs = new List<Liquid>();
+            foreach (int i in record.Inputs) inputs.Add(Definition.InputPool[i]);
+            for (int e = 0; e < Definition.Manual.Count; e++)
+                if (SameMultiset(Definition.Manual[e].Inputs, inputs)) return e;
+            return -1;
+        }
+
         public void SelectInput(int port, int poolIndex)
         {
             SelectedInputs[port] = Values.Wrap(poolIndex, Definition.InputPool.Count);
@@ -86,8 +104,8 @@ namespace Contraption.Core
                     Verified[e] = output.Equals(Definition.Manual[e].Output);
 
             LastOutput = output;
-            Log.Insert(0, new TestRecord { Inputs = (int[])SelectedInputs.Clone(), Output = output });
-            if (Log.Count > 12) Log.RemoveAt(Log.Count - 1);
+            Log.Add(new TestRecord { Inputs = (int[])SelectedInputs.Clone(), Output = output });
+            if (Log.Count > MaxLog) Log.RemoveAt(0);
             Tested?.Invoke();
             Changed?.Invoke();
             return output;
