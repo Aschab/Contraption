@@ -75,7 +75,23 @@ namespace Contraption.Editor
             }
             CheckOrientation();
             CheckShaders();
+            CheckPropTextures();
         };
+
+        // Textured props (Tripo) must import with their base maps; untextured they render plain white.
+        public static void CheckPropTextures()
+        {
+            foreach (var model in new[] { Models + "Workshop_Props.fbx" })
+            {
+                var mats = AssetDatabase.LoadAllAssetsAtPath(model).OfType<Material>()
+                    .Where(m => !System.Enum.TryParse(m.name.Split('.')[0], out MachineKit.Slot _)).ToArray();
+                if (mats.Length == 0) continue;
+                var missing = mats.Where(m => m.mainTexture == null).Select(m => m.name).ToArray();
+                string msg = $"Prop textures {System.IO.Path.GetFileName(model)}: {mats.Length - missing.Length}/{mats.Length}" +
+                             (missing.Length > 0 ? " missing: " + string.Join(", ", missing) : " OK");
+                if (missing.Length == 0) Debug.Log(msg); else Debug.LogError(msg);
+            }
+        }
 
         // Custom shaders silently fall back to Lit when they fail; log why.
         public static void CheckShaders()

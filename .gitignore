@@ -40,3 +40,6 @@ Thumbs.db
 
 # Blender backups
 *.blend1
+
+# Private references between the user and Claude
+Share/

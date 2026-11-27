@@ -764,8 +764,10 @@ def workshop_room():
     return root
 
 PROPS_SRC = os.path.join(PROJECT, "Share/objects")
+PROPS_TEX = os.path.join(EXPORT, "Textures")   # separate files: Unity ignores textures embedded by Blender
 # Tripo props from Share/objects: (file, size kind "h" height / "w" widest side, metres, (x, y, z), rot Z°, tilt X°).
 # Positions in room space (table at the origin, camera side -Y); z = base height. Hanging props get chains to the crane beam.
+# Export with export(obj, EXPORT, embed=False) so the FBX points at the JPEGs in Kit/Textures.
 PROPS = [
     ("drill", "w", 4.2, (-2.2, 4.0, 3.9), 0, 0), ("orb", "h", 1.7, (2.0, 4.0, 3.7), 0, 0), ("jugs", "h", 1.3, (5.0, 4.0, 3.8), 0, 0),
     ("boiler", "h", 2.4, (6.0, 8.6, 0), -15, 0), ("stuff", "h", 1.3, (3.0, 6.2, 0), 10, 0),
@@ -799,14 +801,15 @@ def _import_prop(name, tex_size=1024):
             if n.type != 'TEX_IMAGE' or not n.image: continue
             src = n.image
             if max(src.size) > tex_size: src.scale(tex_size, tex_size)
-            # Re-save as a small JPEG so the embedded FBX texture stays light (props sit in the blurred background).
+            # Re-saved as a small JPEG next to the FBX (props sit in the blurred background).
             w, h = src.size
             px = [0.0] * (w * h * 4); src.pixels.foreach_get(px)
             tmp = bpy.data.images.new("tmp", w, h); tmp.pixels.foreach_set(px)
-            path = os.path.join(bpy.app.tempdir, f"Prop_{name}_{i}.jpg")
+            os.makedirs(PROPS_TEX, exist_ok=True)
+            path = os.path.join(PROPS_TEX, f"Prop_{name}" + (f"_{i}" if i else "") + ".jpg")
             tmp.filepath_raw = path; tmp.file_format = 'JPEG'; tmp.save()
             bpy.data.images.remove(tmp)
-            img = bpy.data.images.load(path); img.pack()
+            img = bpy.data.images.load(path)
             n.image = img
     return ob, hi - lo
 
@@ -869,7 +872,7 @@ def _turn(obj):
         if o.type == 'MESH': o.data.transform(R)
         if o is not obj: o.location = R @ o.location
 
-def export(obj, folder):
+def export(obj, folder, embed=True):
     os.makedirs(folder, exist_ok=True)
     bpy.ops.object.select_all(action='DESELECT')
     for o in [obj] + list(obj.children_recursive): o.select_set(True)
@@ -879,7 +882,7 @@ def export(obj, folder):
         bpy.ops.export_scene.fbx(filepath=os.path.join(folder, obj.name + ".fbx"), use_selection=True,
             axis_forward='-Z', axis_up='Y', bake_space_transform=True, apply_scale_options='FBX_SCALE_UNITS',
             object_types={'MESH', 'EMPTY'}, mesh_smooth_type='FACE', add_leaf_bones=False,
-            path_mode='COPY', embed_textures=True)
+            path_mode='COPY' if embed else 'RELATIVE', embed_textures=embed)
     finally:
         _turn(obj)
         obj.location = loc
