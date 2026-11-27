@@ -22,7 +22,7 @@ Multiple inputs are mixed per property with a rounded average before processing.
 - **Broken** = wrong settings only (for now).
 
 ## Generator
-Seeded and deterministic. Builds registers → controls/effects → transfer pipeline → input pool + manual (from a hidden solution) → displays → start state. Every candidate is solved exhaustively (BFS over the full state space). It's rejected if unsolvable, too short/long, the state space is too large, or the manual is too permissive. Difficulty is scored from solver metrics: solution length, reachable states, trap states (can't reach the goal), conditional effects, hidden registers.
+Seeded and deterministic. Builds registers → controls/effects → transfer pipeline → input pool + manual (from a hidden solution) → displays → start state. Every candidate is solved exhaustively (BFS over the full state space). It's rejected if unsolvable, too short/long, the state space is too large, or the manual is too permissive. Difficulty is scored from solver metrics: solution length, reachable states, trap states (can't reach the goal), conditional effects.
 Saved levels store the full definition (seed + generator version are metadata only).
 
 ## Lab scene
