@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: TwinHeart
   m_EditorClassIdentifier: Contraption.Game::Contraption.Game.MachineKit
   DisplayName: Twin-Heart
+  Prefix: TH
   Body: {r: 0.2, g: 0.38039216, b: 0.3529412, a: 1}
   Trim: {r: 0.65882355, g: 0.27058825, b: 0.18039216, a: 1}
   Panel: {r: 0.9098039, g: 0.8509804, b: 0.70980394, a: 1}
@@ -22,25 +23,83 @@ MonoBehaviour:
   Dark: {r: 0.101960786, g: 0.12156863, b: 0.12156863, a: 1}
   Glass: {r: 0.75, g: 0.92, b: 0.95, a: 0.25}
   Liquid: {r: 0.24705882, g: 0.8784314, b: 0.78431374, a: 1}
-  Segment: {fileID: 919132149155446097, guid: 8b3f401e993e64f89b8a890b02837121, type: 3}
-  EndL: {fileID: 919132149155446097, guid: a4ecd9823701449c18481c9d9e76d999, type: 3}
-  EndR: {fileID: 919132149155446097, guid: 6f8cef5758303426f9fd502211c83519, type: 3}
-  Foot: {fileID: 919132149155446097, guid: 8373090a2e0804354b17ff3bdf8f3e19, type: 3}
-  Bay: {fileID: 919132149155446097, guid: 0e1ec6eb5bef14c85bba2f796ca686cb, type: 3}
-  Top: {fileID: 919132149155446097, guid: 6e94a5490a43d4d8daad5b9dd3b65b3c, type: 3}
-  Button: {fileID: 919132149155446097, guid: ec86a84b470cc4838b40dbbb4deea326, type: 3}
-  Lever: {fileID: 919132149155446097, guid: 13595a568a45348a2a4395a5b18fd7d8, type: 3}
-  Dial: {fileID: 919132149155446097, guid: 9a6a9ae34c1174509b1822c4915f006f, type: 3}
-  Knob: {fileID: 919132149155446097, guid: faa22029e44dd4c99a0e63345f72ac32, type: 3}
-  Joystick: {fileID: 919132149155446097, guid: 9a7f4db7ed53f4a97a3eecfcb8265bb6, type: 3}
-  Light: {fileID: 919132149155446097, guid: dd35b18e8c3484c76bef4f869c98205d, type: 3}
-  Bar: {fileID: 919132149155446097, guid: f8994c144a5664d63a878d8c376d1da5, type: 3}
-  Gauge: {fileID: 919132149155446097, guid: d0f6207a55d024a8ebf0b8b570e1423b, type: 3}
-  Glyph: {fileID: 919132149155446097, guid: c0519e808244040be9e8ef9b8037c378, type: 3}
-  Tank: {fileID: 919132149155446097, guid: dba6c33824bde495f8c94672277fee98, type: 3}
-  Pipe: {fileID: 919132149155446097, guid: 0ee535c684fd946b481e93f8cb7f60dc, type: 3}
-  Flange: {fileID: 919132149155446097, guid: a8384a2bf2ecc406aa572712f2c9fa7b, type: 3}
+  Pieces:
+  - {fileID: 919132149155446097, guid: ec86a84b470cc4838b40dbbb4deea326, type: 3}
+  - {fileID: 919132149155446097, guid: 68b7cd5688d2445b491e9d6c28354423, type: 3}
+  - {fileID: 919132149155446097, guid: 8ef0a1584caf2469e8f532aa5e712eba, type: 3}
+  - {fileID: 919132149155446097, guid: 9a6a9ae34c1174509b1822c4915f006f, type: 3}
+  - {fileID: 919132149155446097, guid: 9830a10db4fc4432b920d9eeba36d0b6, type: 3}
+  - {fileID: 919132149155446097, guid: 9a7f4db7ed53f4a97a3eecfcb8265bb6, type: 3}
+  - {fileID: 919132149155446097, guid: 50324dc6b68944d3ca7f2dbc98018414, type: 3}
+  - {fileID: 919132149155446097, guid: faa22029e44dd4c99a0e63345f72ac32, type: 3}
+  - {fileID: 919132149155446097, guid: 9a35359de959f4fb0aaa96712f1c9620, type: 3}
+  - {fileID: 919132149155446097, guid: 13595a568a45348a2a4395a5b18fd7d8, type: 3}
+  - {fileID: 919132149155446097, guid: d586f2114e58348d8b53efce9bb40696, type: 3}
+  - {fileID: 919132149155446097, guid: a1d388010cecc4b8aa9884d7da66810a, type: 3}
+  - {fileID: 919132149155446097, guid: a2a6ce3700f2b419d8dad9175b82546b, type: 3}
+  - {fileID: 919132149155446097, guid: e30a37cbf45534b6fb5b0dab4d05d97a, type: 3}
+  - {fileID: 919132149155446097, guid: 4d4cd88b323ae40d58b323867d5feecb, type: 3}
+  - {fileID: 919132149155446097, guid: 47baffa44444a440daf1750f5daba364, type: 3}
+  - {fileID: 919132149155446097, guid: 7d0dedd91699440f4865b8b88dbf071d, type: 3}
+  - {fileID: 919132149155446097, guid: b8ced7b6a6582445fa46c5622a2722fd, type: 3}
+  - {fileID: 919132149155446097, guid: f8994c144a5664d63a878d8c376d1da5, type: 3}
+  - {fileID: 919132149155446097, guid: a03abe4e5e265497e98ba5b61b52cf4b, type: 3}
+  - {fileID: 919132149155446097, guid: 1fb39cd57bf784e5ca71e016f6483080, type: 3}
+  - {fileID: 919132149155446097, guid: e2d8e0d257361446f89a97dc8ef5ae3f, type: 3}
+  - {fileID: 919132149155446097, guid: 004ae9b916adc4d0f9906cd8befe543a, type: 3}
+  - {fileID: 919132149155446097, guid: f31fdb93368e54179ba2ce87153c5e5c, type: 3}
+  - {fileID: 919132149155446097, guid: dc1db796097cc4874aae16d82857e852, type: 3}
+  - {fileID: 919132149155446097, guid: d0f6207a55d024a8ebf0b8b570e1423b, type: 3}
+  - {fileID: 919132149155446097, guid: 4b63423de1c244e9d88fd178571c80a8, type: 3}
+  - {fileID: 919132149155446097, guid: bfb923ce62f9842268c293751b1a6b5b, type: 3}
+  - {fileID: 919132149155446097, guid: 9314c99717b7d40ac8d0a41faac62fdc, type: 3}
+  - {fileID: 919132149155446097, guid: c0519e808244040be9e8ef9b8037c378, type: 3}
+  - {fileID: 919132149155446097, guid: 66ab44f9138a746b6a7887eb87dd6508, type: 3}
+  - {fileID: 919132149155446097, guid: 4e6eb0b63d1724a9db10e7218e5e17a2, type: 3}
+  - {fileID: 919132149155446097, guid: dd35b18e8c3484c76bef4f869c98205d, type: 3}
+  - {fileID: 919132149155446097, guid: cd19ca52d581541f0af0a3e7511725fe, type: 3}
+  - {fileID: 919132149155446097, guid: 7d0f970aa945944bb88af7b12dfe700a, type: 3}
+  - {fileID: 919132149155446097, guid: aa80d6e271d2f41cba9ba8ee68035ee1, type: 3}
+  - {fileID: 919132149155446097, guid: 4f9a699ad217b41f7a927424f8a744c5, type: 3}
+  - {fileID: 919132149155446097, guid: 2a0e10076ff9a4a3e9f57bc29e8b03f9, type: 3}
+  - {fileID: 919132149155446097, guid: 025c9192b511f42feb3fd3f1a1cac636, type: 3}
+  - {fileID: 919132149155446097, guid: 0bf0ccf8f8f524014b9262cfd312e344, type: 3}
+  - {fileID: 919132149155446097, guid: 29b198eaed1d54ed6841fe8dfb3fa18a, type: 3}
+  - {fileID: 919132149155446097, guid: e480b6fed991f4f4d83f0f93bcf7f0ec, type: 3}
+  - {fileID: 919132149155446097, guid: 4c5786ac8615c45e5a10d0854c961b15, type: 3}
+  - {fileID: 919132149155446097, guid: a8384a2bf2ecc406aa572712f2c9fa7b, type: 3}
+  - {fileID: 919132149155446097, guid: 306359956328646bd988d7df6f75f57d, type: 3}
+  - {fileID: 919132149155446097, guid: cc17b4d3b54cd4b4c86b31bbc4019dd0, type: 3}
+  - {fileID: 919132149155446097, guid: 896e0d693fbb947d8ac4fbfbcf557876, type: 3}
+  - {fileID: 919132149155446097, guid: 508e22a15347f4ef48ecc55ddcd2dd65, type: 3}
+  - {fileID: 919132149155446097, guid: 8b234df8006ec48548112fe92407a93f, type: 3}
+  - {fileID: 919132149155446097, guid: 96f99b7de83a34d588f481dc5b8e0a66, type: 3}
+  - {fileID: 919132149155446097, guid: b9b7e69a4f11d4c5eb5814f9c3cac2ca, type: 3}
+  - {fileID: 919132149155446097, guid: 0ee535c684fd946b481e93f8cb7f60dc, type: 3}
+  - {fileID: 919132149155446097, guid: 68e41e327f4e9405ba234096eef5a2bc, type: 3}
+  - {fileID: 919132149155446097, guid: 6eb6534fa07804c47b956a2fcc99b541, type: 3}
+  - {fileID: 919132149155446097, guid: 398d62761308f4396a924808f3b270dc, type: 3}
+  - {fileID: 919132149155446097, guid: 69901dd064ce849f6895ff212d932419, type: 3}
+  - {fileID: 919132149155446097, guid: c3e61518e14d24083bd3a8cb00b3ecdb, type: 3}
+  - {fileID: 919132149155446097, guid: 84f64c664aac842499e5330b45bc3df4, type: 3}
+  - {fileID: 919132149155446097, guid: d806e1466345e4ab18fc99407cc2a18f, type: 3}
+  - {fileID: 919132149155446097, guid: 4b60dfcd3e95647e8b08e3b54bb253be, type: 3}
+  - {fileID: 919132149155446097, guid: 2c36ff2fb5c564fccadf7b363dcf17ee, type: 3}
+  - {fileID: 919132149155446097, guid: 8e87ee17ebce34a0baeb005b7ae51a70, type: 3}
+  - {fileID: 919132149155446097, guid: 64b3befad88b44cd0adb78ddc2f62efd, type: 3}
+  - {fileID: 919132149155446097, guid: 43c6dba9574e44c7e97916b7594eb19d, type: 3}
+  - {fileID: 919132149155446097, guid: 35f77c29fc4b54d06b2b5dafdc0d82ba, type: 3}
+  - {fileID: 919132149155446097, guid: 24d550580052b40c184659460c2dd305, type: 3}
+  - {fileID: 919132149155446097, guid: 157a64308495c409aae3e705e73e83c0, type: 3}
+  - {fileID: 919132149155446097, guid: 9e94163a34a8d47abb468f04b75ab6f4, type: 3}
+  - {fileID: 919132149155446097, guid: a42cdd019e37a437aa8f54d7ff4c3b9c, type: 3}
+  - {fileID: 919132149155446097, guid: eb5c65795da4b471484acbd7b5f1e246, type: 3}
+  - {fileID: 919132149155446097, guid: 5c0642c7f33e147bcb097be2815ac05b, type: 3}
+  - {fileID: 919132149155446097, guid: f7f793c396a734aeb8d31d2bf47a275f, type: 3}
+  - {fileID: 919132149155446097, guid: 5376ac5656b94439f8d8a35a6bf22903, type: 3}
   Decor:
   - {fileID: 919132149155446097, guid: 880bbc35941624553b4f902c286084a5, type: 3}
   - {fileID: 919132149155446097, guid: 0c593e01f826e453986b59ca539423b7, type: 3}
   - {fileID: 919132149155446097, guid: eb8b0142c6c2b4a168bdff7f3aaee740, type: 3}
+  LiquidShader: {fileID: 4800000, guid: 460dfe6aefce54ca0b7914066c933b82, type: 3}
+  ParticleShader: {fileID: 4800000, guid: 0406db5a14f94604a8c57ccfbc9f3b46, type: 3}

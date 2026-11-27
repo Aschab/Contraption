@@ -180,6 +180,7 @@ namespace Contraption.Core
             l.TopStyle = rng.Pick(PartStyles.TopStyles);
             l.BaseStyle = rng.Pick(PartStyles.BaseStyles);
             l.DecorSeed = rng.NextULong();
+            l.TestStyle = rng.Pick(PartStyles.TestTriggers);
             FillEmpty(l);
         }
 

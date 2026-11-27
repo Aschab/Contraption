@@ -8,7 +8,7 @@ namespace Contraption.Game
     // Mouse is optional: everything is reachable with keyboard or gamepad. Navigate with one hand, manipulate with the other.
     // Keys: arrows move focus, W/D turn up, S/A turn down (joystick: W/A/S/D push), Space use, Z undo, R reset, T test, [ ] input, Tab port.
     // Gamepad: d-pad/left stick focus, right stick turn/push, A use, X undo, Y reset, B test, LB/RB input, Select port.
-    // Mouse: click use (joystick: click a side, centre to centre), right click / scroll back.
+    // Mouse: click use (joystick: click a side, centre to centre), right click / scroll back; click the big plunger/lever to test.
     public sealed class MachineInput
     {
         public int ActivePort;
@@ -23,7 +23,10 @@ namespace Contraption.Game
             {
                 var pos = mouse.position.ReadValue();
                 bool blocked = overGui(new Vector2(pos.x, Screen.height - pos.y));
-                if (!blocked && Physics.Raycast(cam.ScreenPointToRay(pos), out var hit, 100f) && v.TryGetControl(hit.collider, out var cv))
+                RaycastHit hit = default;
+                bool hitSomething = !blocked && Physics.Raycast(cam.ScreenPointToRay(pos), out hit, 100f);
+                if (hitSomething && mouse.leftButton.wasPressedThisFrame && v.IsTestTrigger(hit.collider)) s.Test();
+                else if (hitSomething && v.TryGetControl(hit.collider, out var cv))
                 {
                     float scroll = mouse.scroll.ReadValue().y;
                     if (mouse.leftButton.wasPressedThisFrame && cv.Kind == ControlKind.Joystick)

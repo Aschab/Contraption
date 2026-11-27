@@ -286,6 +286,36 @@ def disp_glyph(w=1, h=1):
         c.build(f"Cell{i}", root, ((i % 3 - 1) * 0.18 * k, -0.12, (1 - i // 3) * 0.18 * k))
     return root
 
+# ---------------------------------------------------------------- test triggers (outside the grid)
+def test_plunger():
+    # Stands on the chassis top; "Moving" is pushed down when the machine runs a test.
+    mb = MB()
+    mb.cyl(0.38, 0.12, (0, 0.45, 0.06), "Metal", segs=12, axis="Z", bevel=0.02)
+    mb.cyl(0.24, 0.4, (0, 0.45, 0.32), "Body", segs=10, axis="Z", r2=0.2, bevel=0.02)
+    mb.cyl(0.33, 0.06, (0, 0.45, 0.53), "Glow", segs=12, axis="Z")
+    root = mb.build("Test_Plunger")
+    m = MB()
+    m.cyl(0.12, 0.2, (0, 0, 0.1), "Metal", segs=8, axis="Z")
+    m.cyl(0.36, 0.18, (0, 0, 0.26), "Trim", segs=14, axis="Z", r2=0.3, bevel=0.03)
+    m.cyl(0.16, 0.06, (0, 0, 0.37), "Accent", segs=10, axis="Z")
+    m.build("Moving", root, (0, 0.45, 0.56))
+    return root
+
+def test_lever():
+    # Bolted to the chassis' left side (origin on the wall, extends -X); Unity swings "Moving" down-left.
+    mb = MB()
+    mb.box((0.1, 0.5, 0.7), (-0.05, 0.25, 0), "Metal", 0.02)
+    mb.box((0.26, 0.24, 0.3), (-0.2, 0.0, 0), "Trim", 0.03)
+    for z in (-0.25, 0.25): mb.cyl(0.04, 0.03, (-0.05, -0.02, z), "Dark", segs=6)
+    root = mb.build("Test_Lever")
+    m = MB()
+    m.cyl(0.1, 0.3, (0, 0, 0), "Metal", segs=8, axis="Y")
+    m.box((0.1, 0.1, 1.0), (0, 0, 0.5), "Metal", 0.02)
+    m.sphere(0.17, (0, 0, 1.08), "Trim", subdiv=2)
+    m.cyl(0.12, 0.04, (0, 0, 0.85), "Glow", segs=10, axis="Z")
+    m.build("Moving", root, (-0.36, -0.12, 0))
+    return root
+
 # ---------------------------------------------------------------- fillers (decorative panels)
 def corner_rivets(mb, w=1, h=1, slot="Metal"):
     hx, hz = w * CELL / 2 - 0.15, h * CELL / 2 - 0.15
@@ -576,6 +606,7 @@ SHARED = [
     *[(lambda w=w, h=h: disp_bar(w, h)) for (w, h) in ((1, 1), (1, 2), (1, 3), (1, 4), (2, 1), (3, 1), (4, 1))],
     *[(lambda w=w, h=h: disp_gauge(w, h)) for (w, h) in ((1, 1), (2, 2), (2, 1), (3, 1))],
     *[(lambda w=w, h=h: disp_glyph(w, h)) for (w, h) in ((1, 1), (2, 1), (2, 2))],
+    test_plunger, test_lever,
     fill_vent, fill_grille, fill_plate, fill_pipes, fill_porthole, fill_fan, fill_hatch,
     in_tank, in_flask, in_hopper, in_sphere, out_tank, out_vat, out_flask, vial, pipe, flange,
 ]

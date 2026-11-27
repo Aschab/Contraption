@@ -18,6 +18,8 @@ namespace Contraption.Core
         public Container Output = new();
         public string TopStyle = "Crest";
         public string BaseStyle = "Foot";
+        // Big trigger that runs a test: plunger on the chassis top or lever on its left side.
+        public string TestStyle = "Test_Plunger";
         // Re-rolls small decoration (crest positions, rivet patterns) without moving parts.
         public ulong DecorSeed;
         // Shows the liquid after every pipeline step in glass vials (easier puzzles, tutorials).

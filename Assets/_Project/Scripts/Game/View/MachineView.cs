@@ -21,6 +21,7 @@ namespace Contraption.Game
         private LiquidContainerView _output;
         private Transform _stream;
         private Renderer _fixedLamp;
+        private TestTriggerView _trigger;
         private MachineSession _session;
         private MachineKit _kit;
         private MachineLayout _layout;
@@ -34,6 +35,8 @@ namespace Contraption.Game
         public int ControlCount => _controls.Count;
         public Bounds Bounds { get; private set; }
         public bool Animating => _play != null;
+
+        public bool IsTestTrigger(Collider c) => c != null && _trigger != null && c.GetComponentInParent<TestTriggerView>() == _trigger;
 
         public void Build(MachineSession session, MachineKit kit)
         {
@@ -133,6 +136,18 @@ namespace Contraption.Game
 
         private void BuildTops(Rng rng, List<int> free)
         {
+            // Plunger on the leftmost free top; lever (or no room on top) bolted to the left side.
+            free.Sort();
+            if (_layout.TestStyle != "Test_Lever" && free.Count >= 2)
+            {
+                _trigger = TestTriggerView.Create(_kit, _root, _layout.TestStyle, new Vector3(ColumnX(free[0]), TopY(free[0]), 0f));
+                free.RemoveAt(0);
+            }
+            else
+            {
+                int row = Mathf.Min(_layout.TopOf(0), 1);
+                _trigger = TestTriggerView.Create(_kit, _root, "Test_Lever", new Vector3(GridX(0) - 0.02f, _baseH + (row + 0.5f) * Cell, 0.25f));
+            }
             rng.Shuffle(free);
             // The "fixed" lamp lives on the rightmost free top.
             int lampCol = -1;
@@ -319,6 +334,7 @@ namespace Contraption.Game
             foreach (int i in _session.SelectedInputs) inputs.Add(def.InputPool[i]);
             _stages = MachineRules.Stages(def, _session.CopyState(), inputs);
             _testedInputs = (int[])_session.SelectedInputs.Clone();
+            _trigger.Play();
             if (_play != null) StopCoroutine(_play);
             _play = null;
             if (AnimateTests) _play = StartCoroutine(Play(inputs));

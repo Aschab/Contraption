@@ -135,6 +135,7 @@ namespace Contraption.Game
                 foreach (var c in l.Inputs) c.Style = input;
                 lab.RebuildView();
             }
+            if (Cycle("Test", l.TestStyle, PartStyles.TestTriggers, out var test)) { l.TestStyle = test; lab.RebuildView(); }
             if (Cycle("Output", l.Output.Style, PartStyles.OutputContainers, out var output)) { l.Output.Style = output; lab.RebuildView(); }
 
             var p = lab.SelectedPlacement(out string label, out var styles);

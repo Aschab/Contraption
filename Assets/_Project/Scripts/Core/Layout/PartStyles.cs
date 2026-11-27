@@ -27,6 +27,7 @@ namespace Contraption.Core
         public static readonly string[] OutputContainers = { "Out_Tank", "Out_Vat", "Out_Flask" };
         public static readonly string[] TopStyles = { "Crest", "Chimney", "Dome", "Antenna" };
         public static readonly string[] BaseStyles = { "Foot", "Plinth", "Skid" };
+        public static readonly string[] TestTriggers = { "Test_Plunger", "Test_Lever" };
 
         private static readonly Dictionary<ControlKind, PartStyle[]> ControlStyles = new()
         {
