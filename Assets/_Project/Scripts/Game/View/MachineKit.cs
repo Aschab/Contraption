@@ -20,7 +20,7 @@ namespace Contraption.Game
         public List<GameObject> Pieces = new();
         [Header("Decor props for the chassis top (Tripo)")]
         public GameObject[] Decor;
-        public Shader LiquidShader, ParticleShader;
+        public Shader LiquidShader, ParticleShader, PaintedShader;
 
         [NonSerialized] private Look _look;
         [NonSerialized] private Dictionary<string, GameObject> _pieces;

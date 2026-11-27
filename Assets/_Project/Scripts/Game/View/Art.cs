@@ -10,6 +10,7 @@ namespace Contraption.Game
         private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
         private static Material _base;
+        private static Shader _painted;
         private static MaterialPropertyBlock _block;
 
         private static Material Base
@@ -17,11 +18,21 @@ namespace Contraption.Game
             get
             {
                 if (_base != null) return _base;
-                _base = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                _base = new Material(PaintedShader(null));
+                _base.SetFloat("_Grime", 0f);
+                _base.SetFloat("_Wear", 0f);
                 _base.EnableKeyword("_EMISSION");
                 _base.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
                 return _base;
             }
+        }
+
+        // Falls back to URP Lit if the custom shader is missing (e.g. not yet imported).
+        public static Shader PaintedShader(Shader preferred)
+        {
+            if (preferred != null) return preferred;
+            _painted ??= Shader.Find("Contraption/Painted");
+            return _painted != null ? _painted : Shader.Find("Universal Render Pipeline/Lit");
         }
 
         public static GameObject Prim(PrimitiveType type, Transform parent, Vector3 pos, Vector3 scale, Color color)

@@ -16,12 +16,13 @@ namespace Contraption.Game
         private MachineColors _colors;
         private Look _parent;
         private string _name;
+        private Shader _painted;
 
         public static Look From(MachineKit kit, MachineColors colors = null)
         {
             var l = new Look
             {
-                _name = kit.name, _colors = colors,
+                _name = kit.name, _colors = colors, _painted = kit.PaintedShader,
                 Body = kit.Body, Trim = kit.Trim, Panel = kit.Panel, Metal = kit.Metal, Accent = kit.Accent,
                 Glow = kit.Glow, Dark = kit.Dark, Glass = kit.Glass, Liquid = kit.Liquid,
             };
@@ -72,8 +73,15 @@ namespace Contraption.Game
 
         private Material Create(MachineKit.Slot s)
         {
-            var m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = $"{_name}_{s}" };
+            bool glass = s == MachineKit.Slot.Glass;
+            var shader = glass ? Shader.Find("Universal Render Pipeline/Lit") : Art.PaintedShader(_painted);
+            var m = new Material(shader) { name = $"{_name}_{s}" };
             var c = ColorOf(s);
+            if (!glass)
+            {
+                m.SetFloat("_Grime", s == MachineKit.Slot.Glow ? 0f : s == MachineKit.Slot.Metal ? 0.45f : 0.6f);
+                m.SetFloat("_Wear", s == MachineKit.Slot.Glow ? 0f : 0.6f);
+            }
             m.SetColor("_BaseColor", c);
             m.SetFloat("_Smoothness", s == MachineKit.Slot.Metal || s == MachineKit.Slot.Glass ? 0.7f : 0.3f);
             m.SetFloat("_Metallic", s == MachineKit.Slot.Metal ? 0.5f : 0f);

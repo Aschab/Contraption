@@ -54,6 +54,7 @@ namespace Contraption.Editor
             }
             kit.LiquidShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/_Project/Shaders/Liquid.shader");
             kit.ParticleShader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            kit.PaintedShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/_Project/Shaders/Painted.shader");
             var decor = new System.Collections.Generic.List<GameObject>();
             foreach (var guid in AssetDatabase.FindAssets("t:Model " + prefix + "_", new[] { Models + "Decor" }))
                 decor.Add(AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid)));
@@ -70,7 +71,7 @@ namespace Contraption.Editor
             {
                 var kit = AssetDatabase.LoadAssetAtPath<MachineKit>(AssetDatabase.GUIDToAssetPath(guid));
                 if (kit != null && (kit.Pieces == null || kit.Pieces.Count == 0 || kit.Pieces.Exists(p => p == null)
-                    || kit.LiquidShader == null || kit.Pieces.Count != CountFor(kit.Prefix))) { BuildAll(); break; }
+                    || kit.LiquidShader == null || kit.PaintedShader == null || kit.Pieces.Count != CountFor(kit.Prefix))) { BuildAll(); break; }
             }
             CheckOrientation();
         };
