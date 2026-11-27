@@ -30,8 +30,8 @@ Generate (seed + settings) → play/test the machine as the player would → ins
 
 ## Workshop & books
 - The machine stands on a work table in an alien workshop (Share/Workshop, tWorkshop). Each level opens with a camera flight through the workshop that lands on the table; then the background blurs (depth of field).
-- **Manual** (book, front-left of the table): up to four examples per page, vertically centred — input row(s) then the expected output row; a wax seal once that example is proven.
-- **Logbook** (book, front-right): every test as IN rows (input liquid icons) + OUT row, two entries per page; entries can be deleted. OUT values that differ from the manual's answer for the same inputs are orange.
+- **Manual** (book, front-left of the table): four examples per page, vertically centred — input row(s) then the expected output row; a wax seal once that example is proven.
+- **Logbook** (book, front-right): every test as IN rows (input liquid icons) + OUT row, four tests per page filled from the top; entries can be deleted. OUT values that differ from the manual's answer for the same inputs are orange.
 - Values are written as 2×2 grids (0 empty … 4 full) under five alien trait symbols (fixed for the whole game); each input liquid has a cog icon in its colour carrying its sample symbol.
 - **Sample tubes** (racks, left of the machine) are the input pool: each tag has an unmistakable symbol (triangle, ring, square, X, +, diamond, bars, dots) used in the books too. Loaded tubes stand raised; clicking a tube loads it.
 - One book at a time can be lifted into view (manual on the left, logbook on the right); the camera leans so the machine stays visible beside it. The table and everything on it stay sharp; only the room behind blurs.
