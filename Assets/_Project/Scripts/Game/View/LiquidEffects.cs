@@ -4,8 +4,8 @@ using UnityEngine.Rendering;
 
 namespace Contraption.Game
 {
-    // Makes liquid properties readable in bands: temperature (ice 0, mist 1, steam 4, boiling 5),
-    // flammability (sparks 3, flames 4-5), refraction (shader + glints/light 4-5), viscosity (surface wobble).
+    // Makes liquid properties (0-4) readable in bands: temperature (ice 0, mist 1, steam 3, boiling 4),
+    // flammability (sparks 2, flames 3, big flames 4), refraction (shader, light 3, glints 4), viscosity (surface wobble).
     public sealed class LiquidEffects : MonoBehaviour
     {
         private static Texture2D _soft;
@@ -81,20 +81,20 @@ namespace Contraption.Game
             _value = fill > 0.05f ? liquid : null;
             var l = _value ?? default;
             bool on = _value.HasValue;
-            Toggle(_steam, on && l.Temperature >= 4);
-            Toggle(_bubbles, on && l.Temperature >= 5);
+            Toggle(_steam, on && l.Temperature >= 3);
+            Toggle(_bubbles, on && l.Temperature >= 4);
             Toggle(_mist, on && l.Temperature <= 1);
-            Toggle(_sparks, on && l.Flammability >= 3);
-            Toggle(_flames, on && l.Flammability >= 4);
-            Toggle(_glints, on && l.Refraction >= 5);
+            Toggle(_sparks, on && l.Flammability >= 2);
+            Toggle(_flames, on && l.Flammability >= 3);
+            Toggle(_glints, on && l.Refraction >= 4);
             foreach (var c in _ice) c.gameObject.SetActive(on && l.Temperature == 0);
-            _light.enabled = on && l.Refraction >= 4;
+            _light.enabled = on && l.Refraction >= 3;
             if (on)
             {
                 var em = _flames.emission;
-                em.rateOverTime = l.Flammability >= 5 ? 45f : 15f;
+                em.rateOverTime = l.Flammability >= 4 ? 45f : 15f;
                 var fm = _flames.main;
-                fm.startSize = _width * (l.Flammability >= 5 ? 0.75f : 0.4f);
+                fm.startSize = _width * (l.Flammability >= 4 ? 0.75f : 0.4f);
                 _light.color = Art.LiquidColor(l.Color);
             }
         }
@@ -124,7 +124,7 @@ namespace Contraption.Game
                 _ice[i].rotation = Quaternion.Euler(10f * Mathf.Sin(t + i), i * 37f + t * 6f, 8f * Mathf.Cos(t * 0.8f + i));
             }
             _light.transform.position = top + new Vector3(0f, 0.1f, -0.5f);
-            _light.intensity = (l.Refraction >= 5 ? 2.5f : 1.2f) * (0.75f + 0.25f * Mathf.PerlinNoise(t * 3f, GetInstanceID()));
+            _light.intensity = (l.Refraction >= 4 ? 2.5f : 1.2f) * (0.75f + 0.25f * Mathf.PerlinNoise(t * 3f, GetInstanceID()));
         }
 
         private static void Toggle(ParticleSystem ps, bool on)

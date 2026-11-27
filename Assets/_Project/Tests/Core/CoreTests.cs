@@ -71,9 +71,9 @@ namespace Contraption.Core.Tests
             Assert.AreEqual(new[] { 1, 0 }, s);
 
             def.Pipeline.Add(new TransferOp { Kind = OpKind.Exchange, Target = LiquidProperty.Viscosity, Source = LiquidProperty.Temperature });
-            var output = MachineRules.Process(def, s, new[] { new Liquid { Viscosity = 3, Temperature = 5 } });
-            Assert.AreEqual(5, output.Viscosity);
-            Assert.AreEqual(3, output.Temperature);
+            var output = MachineRules.Process(def, s, new[] { new Liquid { Viscosity = 1, Temperature = 4 } });
+            Assert.AreEqual(4, output.Viscosity);
+            Assert.AreEqual(1, output.Temperature);
         }
 
         [Test]

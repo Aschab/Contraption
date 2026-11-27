@@ -16,7 +16,7 @@ namespace Contraption.Core
 
     public static class MachineGenerator
     {
-        public const int Version = 2;
+        public const int Version = 3;
 
         public static GenerationResult Generate(ulong seed, GeneratorSettings s)
         {
@@ -98,8 +98,8 @@ namespace Contraption.Core
                 {
                     case ControlKind.Button: c.Positions = 1; break;
                     case ControlKind.Lever: c.Positions = 2; break;
-                    case ControlKind.Dial: c.Positions = rng.RangeInclusive(4, 6); c.Wraps = true; break;
-                    case ControlKind.Knob: c.Positions = rng.RangeInclusive(3, 6); break;
+                    case ControlKind.Dial: c.Positions = rng.RangeInclusive(4, 5); c.Wraps = true; break;
+                    case ControlKind.Knob: c.Positions = rng.RangeInclusive(3, 5); break;
                     case ControlKind.Joystick: c.Positions = ControlDef.JoystickPositions; break;
                 }
                 def.Controls.Add(c);
