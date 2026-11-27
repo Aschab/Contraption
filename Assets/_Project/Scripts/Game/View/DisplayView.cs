@@ -12,10 +12,11 @@ namespace Contraption.Game
         private Renderer[] _cells;
         private Transform _needle;
         private Quaternion _needleRest;
-        private Vector3 _needleAxis;
+        private Vector3 _needleAxis, _needleMin, _needleMax;
+        private bool _linear;
         private float _needleAngle, _needleTarget;
 
-        public static DisplayView Create(MachineKit kit, Transform machine, Vector3 pos, DisplayDef def, int[] glyphs)
+        public static DisplayView Create(MachineKit kit, Transform machine, Vector3 pos, DisplayDef def, Placement p, int[] glyphs)
         {
             var go = new GameObject($"{def.Kind} display");
             go.transform.SetParent(machine, false);
@@ -25,14 +26,7 @@ namespace Contraption.Game
             v._kit = kit;
             v._glyphs = glyphs;
 
-            var model = def.Kind switch
-            {
-                DisplayKind.Light => kit.Light,
-                DisplayKind.Bar => kit.Bar,
-                DisplayKind.Gauge => kit.Gauge,
-                _ => kit.Glyph,
-            };
-            var body = kit.Spawn(model, go.transform, Vector3.zero).transform;
+            var body = kit.Spawn(p.Style, go.transform, Vector3.zero).transform;
             switch (def.Kind)
             {
                 case DisplayKind.Light: v._bulb = MachineKit.Find(body, "Bulb").GetComponent<Renderer>(); break;
@@ -42,6 +36,14 @@ namespace Contraption.Game
                     v._needle = MachineKit.Find(body, "Needle");
                     v._needleRest = v._needle.localRotation;
                     v._needleAxis = Art.AxisIn(v._needle, machine, Vector3.forward);
+                    var min = MachineKit.FindOptional(body, "Min");
+                    var max = MachineKit.FindOptional(body, "Max");
+                    v._linear = min != null && max != null;
+                    if (v._linear)
+                    {
+                        v._needleMin = v._needle.parent.InverseTransformPoint(min.position);
+                        v._needleMax = v._needle.parent.InverseTransformPoint(max.position);
+                    }
                     break;
             }
             return v;
@@ -72,7 +74,7 @@ namespace Contraption.Game
                     for (int i = 0; i < _cells.Length; i++) Art.Paint(_cells[i], i < n ? on : off, i < n ? on * 1.5f : Color.black);
                     break;
                 case DisplayKind.Gauge:
-                    _needleTarget = Mathf.Lerp(70f, -70f, norm);
+                    _needleTarget = _linear ? norm : Mathf.Lerp(70f, -70f, norm);
                     if (instant) _needleAngle = _needleTarget;
                     break;
                 case DisplayKind.Glyph:
@@ -87,7 +89,8 @@ namespace Contraption.Game
             // Continuous needle with a little analog jitter.
             _needleAngle = Mathf.Lerp(_needleAngle, _needleTarget, 1f - Mathf.Exp(-8f * Time.deltaTime));
             float jitter = (Mathf.PerlinNoise(Time.time * 3f, GetInstanceID()) - 0.5f) * 2f;
-            _needle.localRotation = Quaternion.AngleAxis(_needleAngle + jitter, _needleAxis) * _needleRest;
+            if (_linear) _needle.localPosition = Vector3.LerpUnclamped(_needleMin, _needleMax, _needleAngle + jitter * 0.01f);
+            else _needle.localRotation = Quaternion.AngleAxis(_needleAngle + jitter, _needleAxis) * _needleRest;
         }
     }
 }

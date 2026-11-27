@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Contraption.Core;
 using UnityEngine;
@@ -120,6 +121,7 @@ namespace Contraption.Game
             var solve = Solver.Solve(def);
             Report = solve.Solvable ? Difficulty.Evaluate(def, solve) : null;
             if (!solve.Solvable) Status = "Loaded machine is NOT solvable from its start state.";
+            def.Layout ??= LayoutGenerator.Generate(def, def.Seed, Settings);
             int k = System.Array.FindIndex(_kits, x => x.name == def.Kit);
             if (k >= 0) KitIndex = k;
             else def.Kit = _kits[KitIndex].name;
@@ -139,6 +141,48 @@ namespace Contraption.Game
             Session.Definition.Kit = _kits[index].name;
             Load(Session.Definition);
         }
+
+        public int SelectedPart { get; set; }
+
+        public void RebuildView()
+        {
+            _view.Build(Session, _kits[KitIndex]);
+            Frame();
+        }
+
+        public void NewLayout()
+        {
+            var def = Session.Definition;
+            def.Layout = LayoutGenerator.Generate(def, (ulong)Random.Range(1, int.MaxValue), Settings);
+            RebuildView();
+        }
+
+        public void NewDecor()
+        {
+            LayoutEditor.Reroll(Session.Definition.Layout, (ulong)Random.Range(1, int.MaxValue));
+            RebuildView();
+        }
+
+        // Selectable parts: controls first, then displays.
+        public Placement SelectedPlacement(out string label, out IReadOnlyList<PartStyle> styles)
+        {
+            var def = Session.Definition;
+            int n = def.Controls.Count + def.Displays.Count;
+            SelectedPart = Values.Wrap(SelectedPart, n);
+            if (SelectedPart < def.Controls.Count)
+            {
+                var c = def.Controls[SelectedPart];
+                label = $"{MachineDescriber.ControlName(def, SelectedPart)} ({c.Kind})";
+                styles = PartStyles.For(c.Kind);
+                return def.Layout.Controls[SelectedPart];
+            }
+            int d = SelectedPart - def.Controls.Count;
+            label = $"Display {d + 1} ({def.Displays[d].Kind})";
+            styles = PartStyles.For(def.Displays[d].Kind);
+            return def.Layout.Displays[d];
+        }
+
+        public void EditStatus(bool ok, string what) => Status = ok ? what : what + ": no room there.";
 
         public void LoadFile(string path)
         {

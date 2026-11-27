@@ -11,7 +11,7 @@ namespace Contraption.Game
     {
         public const float Width = 400f;
         private Vector2 _scroll;
-        private bool _showSettings = true, _showRules, _showLevels;
+        private bool _showSettings = true, _showRules, _showLevels, _showLayout = true;
         private string _solutionText = "";
 
         public void Draw(Rect area, MachineLab lab)
@@ -42,6 +42,8 @@ namespace Contraption.Game
             if (GUILayout.Button("Reset to defaults", GUILayout.Width(130))) lab.ResetSettings();
             GUILayout.EndHorizontal();
             if (_showSettings) DrawSettings(lab.Settings);
+
+            if (lab.Session != null) DrawLayout(lab);
 
             GUILayout.Space(6);
             GUILayout.Label("<b>RESULT</b>", Rich());
@@ -105,9 +107,71 @@ namespace Contraption.Game
             s.InvertedDisplayChance = Pct("Inverted display", s.InvertedDisplayChance);
             s.MaxGoalFraction = Pct("Max goal fraction", s.MaxGoalFraction);
             s.MaxTrapRatio = Pct("Max trap ratio", s.MaxTrapRatio);
+            Range("Rows", ref s.MinRows, ref s.MaxRows, 2, 5);
+            s.EmptyCells = Pct("Empty cells", s.EmptyCells);
+            s.LargePartChance = Pct("Large parts", s.LargePartChance);
             Kinds("Controls", s.ControlKinds);
             Kinds("Displays", s.DisplayKinds);
             Kinds("Ops", s.OpKinds);
+        }
+
+        private void DrawLayout(MachineLab lab)
+        {
+            var l = lab.Session.Definition.Layout;
+            GUILayout.Space(6);
+            _showLayout = GUILayout.Toggle(_showLayout, "<b>LAYOUT</b>  (saved with the level)", Rich(GUI.skin.toggle));
+            if (!_showLayout) return;
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("New layout")) lab.NewLayout();
+            if (GUILayout.Button("New decor")) lab.NewDecor();
+            bool steps = GUILayout.Toggle(l.ShowSteps, "Show steps");
+            GUILayout.EndHorizontal();
+            if (steps != l.ShowSteps) { l.ShowSteps = steps; lab.RebuildView(); }
+
+            if (Cycle("Top", l.TopStyle, PartStyles.TopStyles, out var top)) { l.TopStyle = top; lab.RebuildView(); }
+            if (Cycle("Base", l.BaseStyle, PartStyles.BaseStyles, out var bottom)) { l.BaseStyle = bottom; lab.RebuildView(); }
+            if (Cycle("Inputs", l.Inputs[0].Style, PartStyles.InputContainers, out var input))
+            {
+                foreach (var c in l.Inputs) c.Style = input;
+                lab.RebuildView();
+            }
+            if (Cycle("Output", l.Output.Style, PartStyles.OutputContainers, out var output)) { l.Output.Style = output; lab.RebuildView(); }
+
+            var p = lab.SelectedPlacement(out string label, out var styles);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("◀", GUILayout.Width(26))) lab.SelectedPart--;
+            GUILayout.Label($"{label} · {p.Style} at {p.X},{p.Y}");
+            if (GUILayout.Button("▶", GUILayout.Width(26))) lab.SelectedPart++;
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Style", GUILayout.Width(40));
+            if (GUILayout.Button("◀", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryRestyle(l, p, styles, -1), "Restyled");
+            if (GUILayout.Button("▶", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryRestyle(l, p, styles, 1), "Restyled");
+            GUILayout.Label("Move", GUILayout.Width(40));
+            if (GUILayout.Button("←", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, -1, 0), "Moved");
+            if (GUILayout.Button("↑", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, 0, 1), "Moved");
+            if (GUILayout.Button("↓", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, 0, -1), "Moved");
+            if (GUILayout.Button("→", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, 1, 0), "Moved");
+            GUILayout.EndHorizontal();
+        }
+
+        private static void Edit(MachineLab lab, bool ok, string what)
+        {
+            lab.EditStatus(ok, what);
+            if (ok) lab.RebuildView();
+        }
+
+        private static bool Cycle(string label, string current, string[] options, out string next)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(label, GUILayout.Width(50));
+            int i = Mathf.Max(0, Array.IndexOf(options, current)), dir = 0;
+            if (GUILayout.Button("◀", GUILayout.Width(26))) dir = -1;
+            GUILayout.Label(current, GUILayout.Width(110));
+            if (GUILayout.Button("▶", GUILayout.Width(26))) dir = 1;
+            GUILayout.EndHorizontal();
+            next = options[Values.Wrap(i + dir, options.Length)];
+            return dir != 0;
         }
 
         private static int Int(string label, int v, int min, int max)

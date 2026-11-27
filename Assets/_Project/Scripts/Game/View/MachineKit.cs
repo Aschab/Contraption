@@ -13,16 +13,38 @@ namespace Contraption.Game
         public enum Slot { Body, Trim, Panel, Metal, Accent, Glow, Dark, Glass, Liquid }
 
         public string DisplayName;
+        // Kit-specific pieces are named "<Prefix>_<Name>" (chassis tiles, tops, bases); the rest are shared.
+        public string Prefix;
         public Color Body, Trim, Panel, Metal, Accent, Glow, Dark, Glass, Liquid;
 
-        [Header("Chassis (kit specific)")]
-        public GameObject Segment, EndL, EndR, Foot, Bay, Top;
-        [Header("Mechanisms (shared models)")]
-        public GameObject Button, Lever, Dial, Knob, Joystick, Light, Bar, Gauge, Glyph, Tank, Pipe, Flange;
-        [Header("Decor (placed on top of segments)")]
+        public List<GameObject> Pieces = new();
+        [Header("Decor props for the chassis top (Tripo)")]
         public GameObject[] Decor;
+        public Shader LiquidShader, ParticleShader;
 
         [NonSerialized] private Dictionary<string, Material> _materials;
+        [NonSerialized] private Dictionary<string, GameObject> _pieces;
+
+        // "<Prefix>_<name>" first, then the shared "<name>". Throws if neither exists.
+        public GameObject Get(string pieceName)
+        {
+            if (_pieces == null)
+            {
+                _pieces = new Dictionary<string, GameObject>();
+                foreach (var p in Pieces) if (p != null) _pieces[p.name] = p;
+            }
+            if (_pieces.TryGetValue(Prefix + "_" + pieceName, out var go) || _pieces.TryGetValue(pieceName, out go)) return go;
+            throw new InvalidOperationException($"Kit '{name}' has no piece '{pieceName}'. Re-export from build_kit.py, then Contraption → Build Kits.");
+        }
+
+        public bool Has(string pieceName)
+        {
+            try { Get(pieceName); return true; }
+            catch (InvalidOperationException) { return false; }
+        }
+
+        public GameObject Spawn(string pieceName, Transform parent, Vector3 localPos, string name = null) =>
+            Spawn(Get(pieceName), parent, localPos, name);
 
         public Color ColorOf(Slot s) => s switch
         {
@@ -43,6 +65,16 @@ namespace Contraption.Game
                 r.sharedMaterials = mats;
             }
             return go;
+        }
+
+        [NonSerialized] private Material _liquid;
+
+        public Material LiquidMaterial()
+        {
+            if (_liquid != null) return _liquid;
+            _liquid = new Material(LiquidShader != null ? LiquidShader : Shader.Find("Contraption/Liquid")) { name = $"{name}_Liquid" };
+            _liquid.renderQueue = (int)RenderQueue.Transparent - 10;
+            return _liquid;
         }
 
         private bool TryGetMaterial(string materialName, out Material m)
@@ -99,6 +131,13 @@ namespace Contraption.Game
             for (int i = dot + 1; i < n.Length; i++)
                 if (!char.IsDigit(n[i])) return n;
             return n.Substring(0, dot);
+        }
+
+        public static Transform FindOptional(Transform root, string partName)
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                if (BaseName(t.name) == partName) return t;
+            return null;
         }
 
         public static Transform FindSuffix(Transform root, string suffix)

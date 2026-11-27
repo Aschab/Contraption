@@ -1,3 +1,4 @@
+using System.Linq;
 using Contraption.Game;
 using UnityEditor;
 using UnityEngine;
@@ -8,6 +9,7 @@ namespace Contraption.Editor
     // Colors are only set when a kit is first created, so Inspector tweaks survive rebuilds.
     public static class KitBuilder
     {
+        private static readonly string[] Prefixes = { "CO", "TH" };
         private const string Models = "Assets/_Project/Art/Models/Kit/";
         private const string Output = "Assets/_Project/Resources/Kits/";
 
@@ -42,11 +44,16 @@ namespace Contraption.Editor
                 AssetDatabase.CreateAsset(kit, path);
             }
             kit.DisplayName = display;
-            kit.Segment = Model(prefix + "_Segment"); kit.EndL = Model(prefix + "_EndL"); kit.EndR = Model(prefix + "_EndR");
-            kit.Foot = Model(prefix + "_Foot"); kit.Bay = Model(prefix + "_Bay"); kit.Top = Model(prefix + "_Top");
-            kit.Button = Model("Ctl_Button"); kit.Lever = Model("Ctl_Lever"); kit.Dial = Model("Ctl_Dial"); kit.Knob = Model("Ctl_Knob"); kit.Joystick = Model("Ctl_Joystick");
-            kit.Light = Model("Disp_Light"); kit.Bar = Model("Disp_Bar"); kit.Gauge = Model("Disp_Gauge"); kit.Glyph = Model("Disp_Glyph");
-            kit.Tank = Model("Tank"); kit.Pipe = Model("Pipe"); kit.Flange = Model("Flange");
+            kit.Prefix = prefix;
+            kit.Pieces = new System.Collections.Generic.List<GameObject>();
+            foreach (var model in ModelPaths())
+            {
+                string n = System.IO.Path.GetFileNameWithoutExtension(model);
+                bool otherKit = System.Array.Exists(Prefixes, p => p != prefix && n.StartsWith(p + "_"));
+                if (!otherKit) kit.Pieces.Add(AssetDatabase.LoadAssetAtPath<GameObject>(model));
+            }
+            kit.LiquidShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/_Project/Shaders/Liquid.shader");
+            kit.ParticleShader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
             var decor = new System.Collections.Generic.List<GameObject>();
             foreach (var guid in AssetDatabase.FindAssets("t:Model " + prefix + "_", new[] { Models + "Decor" }))
                 decor.Add(AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid)));
@@ -62,24 +69,31 @@ namespace Contraption.Editor
             foreach (var guid in AssetDatabase.FindAssets("t:MachineKit"))
             {
                 var kit = AssetDatabase.LoadAssetAtPath<MachineKit>(AssetDatabase.GUIDToAssetPath(guid));
-                if (kit != null && (kit.Joystick == null || kit.Segment == null)) { BuildAll(); break; }
+                if (kit != null && (kit.Pieces == null || kit.Pieces.Count == 0 || kit.Pieces.Exists(p => p == null)
+                    || kit.LiquidShader == null || kit.Pieces.Count != CountFor(kit.Prefix))) { BuildAll(); break; }
             }
             CheckOrientation();
         };
 
         public static void CheckOrientation()
         {
-            foreach (var prefix in new[] { "CO", "TH" })
+            foreach (var prefix in Prefixes)
             {
-                var seg = Center(prefix + "_Segment");
-                var endL = Center(prefix + "_EndL");
-                var endR = Center(prefix + "_EndR");
-                if (seg == null || endL == null || endR == null) continue;
-                bool ok = seg.Value.z > 0.2f && endL.Value.x < 0f && endR.Value.x > 0f;
-                string msg = $"Kit orientation {prefix}: {(ok ? "OK" : "WRONG")} (segment centre {seg.Value}, endL {endL.Value}, endR {endR.Value})";
+                var tr = Center(prefix + "_Tile_8");
+                var tl = Center(prefix + "_Tile_4");
+                if (tr == null || tl == null) continue;
+                bool ok = tr.Value.z > 0.2f && tl.Value.x < 0f && tr.Value.x > 0f && tr.Value.y > 0f;
+                string msg = $"Kit orientation {prefix}: {(ok ? "OK" : "WRONG")} (top-right tile centre {tr.Value}, top-left {tl.Value})";
                 if (ok) Debug.Log(msg); else Debug.LogError(msg);
             }
         }
+
+        private static string[] ModelPaths() =>
+            System.Array.ConvertAll(AssetDatabase.FindAssets("t:Model", new[] { Models.TrimEnd('/') }), AssetDatabase.GUIDToAssetPath)
+                .Where(p => System.IO.Path.GetDirectoryName(p).Replace('\\', '/') + "/" == Models).OrderBy(p => p).ToArray();
+
+        private static int CountFor(string prefix) =>
+            ModelPaths().Count(p => !System.Array.Exists(Prefixes, x => x != prefix && System.IO.Path.GetFileName(p).StartsWith(x + "_")));
 
         private static Vector3? Center(string name)
         {
@@ -90,13 +104,6 @@ namespace Contraption.Editor
             var sum = Vector3.zero;
             foreach (var mf in mfs) sum += mf.transform.localToWorldMatrix.MultiplyPoint(mf.sharedMesh.bounds.center);
             return sum / mfs.Length;
-        }
-
-        private static GameObject Model(string name)
-        {
-            var go = AssetDatabase.LoadAssetAtPath<GameObject>(Models + name + ".fbx");
-            if (go == null) Debug.LogError("Missing kit model " + name);
-            return go;
         }
 
         private static Color Hex(string hex) => ColorUtility.TryParseHtmlString("#" + hex, out var c) ? c : Color.magenta;

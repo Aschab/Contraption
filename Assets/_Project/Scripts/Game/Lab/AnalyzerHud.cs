@@ -69,7 +69,8 @@ namespace Contraption.Game
             }
 
             GUILayout.EndScrollView();
-            GUILayout.Label("Click/←→ select · ↑↓ turn · Space use · Z undo · R reset\nJoystick: click a side · ↑↓ · Shift+←→ · Space centre");
+            MachineView.AnimateTests = GUILayout.Toggle(MachineView.AnimateTests, "Animate tests (any key skips)");
+            GUILayout.Label("Arrows select · W/S (A/D) turn or push · Space use/centre\nZ undo · R reset · T test · click / right-click / scroll");
             GUILayout.EndArea();
         }
 
