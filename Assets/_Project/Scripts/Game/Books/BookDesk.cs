@@ -5,10 +5,10 @@ using UnityEngine.InputSystem;
 
 namespace Contraption.Game
 {
-    // The manual (left) and the logbook (right) on the table.
-    // Manual: one example per page (inputs → expected output), sealed once proven.
+    // The manual (left) and the logbook (right) on the table; one of them can be lifted into view at a time.
+    // Manual: up to four examples per page (inputs → expected output), vertically centred, sealed once proven.
     // Logbook: every test as IN rows + OUT row; OUT cells that differ from the manual's answer for the same inputs are orange.
-    // Keys: Q manual, E logbook (look / put down), ←→ turn the last opened book, ↑↓ pick a log entry, Delete removes it, Esc puts both down.
+    // Keys: Q manual, E logbook (look / put down), ←→ turn the book in view, ↑↓ pick a log entry, Delete removes it, Esc puts it down.
     // Gamepad: LT manual, RT logbook, d-pad as arrows while a book is up, right-stick press deletes. Mouse: click a book to pick it up,
     // click its left/right page to turn, click ✕ to delete an entry, right-click to put it down.
     public sealed class BookDesk
@@ -23,11 +23,17 @@ namespace Contraption.Game
         private string _drawnVerified = "";
 
         public bool CapturesArrows => _active != null && _active.Held;
+        // -1 manual in view (left), +1 logbook in view (right), 0 none.
+        public int FocusSide => _active == null || !_active.Held ? 0 : _active == _manual ? -1 : 1;
+        public Bounds RestBounds { get; }
 
         public BookDesk(MachineKit kit, Transform parent, Camera cam, Vector3 manualPos, Vector3 logPos)
         {
             _manual = BookView.Create(kit, parent, "Book_Manual", manualPos, Quaternion.Euler(0f, 8f, 0f), cam, true);
             _log = BookView.Create(kit, parent, "Book_Log", logPos, Quaternion.Euler(0f, -8f, 0f), cam, false);
+            var rest = new Bounds(manualPos, new Vector3(0.9f, 0.05f, 0.6f));
+            rest.Encapsulate(new Bounds(logPos, new Vector3(0.9f, 0.05f, 0.6f)));
+            RestBounds = rest;
             _manual.DrawPage = DrawManualPage;
             _log.DrawPage = DrawLogPage;
         }
@@ -37,7 +43,7 @@ namespace Contraption.Game
             if (_session != null) _session.Changed -= OnChanged;
             _session = session;
             _session.Changed += OnChanged;
-            _manual.PageCount = () => _session.Definition.Manual.Count;
+            _manual.PageCount = () => (_session.Definition.Manual.Count + ManualPerPage() - 1) / ManualPerPage();
             _log.PageCount = () => Mathf.Max(1, (_session.Log.Count + PerPage() - 1) / PerPage());
             _selected = -1;
             _manual.ShowSpread(0);
@@ -77,7 +83,7 @@ namespace Contraption.Game
             {
                 if (kb.qKey.wasPressedThisFrame) Toggle(_manual);
                 if (kb.eKey.wasPressedThisFrame) Toggle(_log);
-                if (kb.escapeKey.wasPressedThisFrame) { _manual.SetHeld(false); _log.SetHeld(false); _active = null; }
+                if (kb.escapeKey.wasPressedThisFrame && _active != null) Toggle(_active);
                 if (CapturesArrows)
                 {
                     if (kb.leftArrowKey.wasPressedThisFrame) _active.Turn(-1);
@@ -117,15 +123,18 @@ namespace Contraption.Game
             }
             var book = hit.collider.GetComponentInParent<BookView>();
             if (book != _manual && book != _log) return;
-            if (mouse.rightButton.wasPressedThisFrame) { book.SetHeld(false); if (_active == book) _active = null; }
+            if (mouse.rightButton.wasPressedThisFrame) { if (book.Held) Toggle(book); }
             else if (!book.Held) Toggle(book);
-            else { _active = book; book.Turn(book.SideOf(hit.point)); }
+            else book.Turn(book.SideOf(hit.point));
         }
 
+        // Only one book is up at a time.
         private void Toggle(BookView book)
         {
-            book.Toggle();
-            _active = book.Held ? book : _active == book ? (_manual.Held ? _manual : _log.Held ? _log : null) : _active;
+            bool up = !book.Held;
+            _manual.SetHeld(up && book == _manual);
+            _log.SetHeld(up && book == _log);
+            _active = up ? book : null;
         }
 
         private void Select(int dir)
@@ -154,43 +163,68 @@ namespace Contraption.Game
             for (int t = 0; t <= Liquid.PropertyCount; t++) d.Line(new Vector2(x0 + Col * t, top), new Vector2(x0 + Col * t, -PageH / 2f + 0.03f), 0.0018f, PageDrawer.Ink);
         }
 
-        private void Row(PageDrawer d, float y, Liquid l, Liquid? expected, bool into, int poolIndex)
+        private void Row(PageDrawer d, float y, Liquid l, Liquid? expected, bool into, int poolIndex, float cell = Cell)
         {
             float lx = -PageW / 2f + 0.02f;
-            if (into) d.LiquidIcon(new Vector2(lx + 0.018f, y), 0.012f, l, poolIndex);
-            d.FlowMark(new Vector2(lx + 0.058f, y), 0.03f, into);
+            if (into) d.LiquidIcon(new Vector2(lx + 0.018f, y), cell * 0.4f, l, poolIndex);
+            d.FlowMark(new Vector2(lx + 0.058f, y), cell * 0.9f, into);
             for (int t = 0; t < Liquid.PropertyCount; t++)
             {
                 var p = (LiquidProperty)t;
                 bool wrong = expected.HasValue && expected.Value[p] != l[p];
-                d.Grid(new Vector2(ColX(t), y), Cell, l[p], wrong ? PageDrawer.Mismatch : PageDrawer.Fill);
+                d.Grid(new Vector2(ColX(t), y), cell, l[p], wrong ? PageDrawer.Mismatch : PageDrawer.Fill);
             }
         }
+
+        private const float ManualRow = 0.038f, ManualCell = 0.028f, ManualGap = 0.022f;
+        private const float BodyTop = PageH / 2f - 0.02f - 0.075f, BodyBottom = -PageH / 2f + 0.03f;
+
+        private float ManualEntryHeight() => (_session.Definition.InputPorts + 1) * ManualRow;
+
+        private int ManualPerPage() =>
+            Mathf.Clamp(Mathf.FloorToInt((BodyTop - BodyBottom + ManualGap) / (ManualEntryHeight() + ManualGap)), 1, 4);
 
         private void DrawManualPage(PageDrawer d, int page)
         {
             var def = _session.Definition;
-            if (page >= def.Manual.Count) return;
-            var entry = def.Manual[page];
+            int per = ManualPerPage(), first = page * per;
+            if (first >= def.Manual.Count) return;
+            int count = Mathf.Min(per, def.Manual.Count - first);
             float top = PageH / 2f - 0.02f;
             Header(d, top);
-            float y = top - 0.1f;
-            foreach (var l in entry.Inputs)
+            float h = ManualEntryHeight(), total = count * h + (count - 1) * ManualGap;
+            float y = (BodyTop + BodyBottom) / 2f + total / 2f;   // recipes centred vertically
+            for (int k = 0; k < count; k++)
             {
-                Row(d, y, l, null, true, def.InputPool.IndexOf(l));
-                y -= RowH;
-            }
-            d.Arrow(new Vector2(0.05f, y + 0.01f), new Vector2(0.05f, y - 0.05f), 0.004f);
-            y -= 0.08f;
-            Row(d, y, entry.Output, null, false, -1);
-            for (int i = 0; i <= page; i++) d.Rect(new Vector2((i - page / 2f) * 0.014f, -PageH / 2f + 0.04f), new Vector2(0.007f, 0.007f), PageDrawer.Ink);
-            if (_session.Verified[page])
-            {
-                var seal = new Vector2(PageW / 2f - 0.07f, -PageH / 2f + 0.09f);
-                d.Disc(seal, 0.035f, PageDrawer.Seal, 3);
-                d.Symbol(seal, 0.03f, Glyphs.MakeRunes(0x5EA1UL, 1, 4, 5)[0], new Color(0.35f, 0.04f, 0.03f), 0.005f);
+                int e = first + k;
+                var entry = def.Manual[e];
+                float entryTop = y;
+                y -= ManualRow / 2f;
+                foreach (var l in entry.Inputs)
+                {
+                    Row(d, y, l, null, true, def.InputPool.IndexOf(l), ManualCell);
+                    y -= ManualRow;
+                }
+                Row(d, y, entry.Output, null, false, -1, ManualCell);
+                float bx = -PageW / 2f + 0.06f;
+                d.Line(new Vector2(bx, entryTop - 0.006f), new Vector2(bx, entryTop - h + 0.006f), 0.002f, PageDrawer.Ink);
+                if (_session.Verified[e])
+                {
+                    var seal = new Vector2(PageW / 2f - 0.016f, y);
+                    d.Disc(seal, 0.013f, PageDrawer.Seal, 3);
+                    d.Symbol(seal, 0.012f, SealMark, new Color(0.35f, 0.04f, 0.03f), 0.0025f);
+                }
+                y -= ManualRow / 2f;
+                if (k < count - 1)
+                {
+                    d.Line(new Vector2(-PageW / 2f + 0.02f, y - ManualGap / 2f + 0.002f), new Vector2(PageW / 2f - 0.02f, y - ManualGap / 2f + 0.002f), 0.0015f, PageDrawer.Ink);
+                    d.Line(new Vector2(-PageW / 2f + 0.02f, y - ManualGap / 2f - 0.002f), new Vector2(PageW / 2f - 0.02f, y - ManualGap / 2f - 0.002f), 0.0015f, PageDrawer.Ink);
+                }
+                y -= ManualGap;
             }
         }
+
+        private static readonly int SealMark = Glyphs.MakeRunes(0x5EA1UL, 1, 4, 5)[0];
 
         private void DrawLogPage(PageDrawer d, int page)
         {

@@ -676,6 +676,31 @@ def book_sheet():
     mb = MB(); mb.box((PAGE_W, PAGE_H, 0.004), (PAGE_W / 2 + 0.012, 0, 0.002), "Panel", 0.001)
     return mb.build("Book_Sheet")
 
+def sample_tube():
+    # Test tube with a cork and a paper tag (front, facing -Y). Origin at the tube bottom; "TagFace" is the tag's front centre.
+    mb = MB()
+    mb.cyl(0.035, 0.26, (0, 0, 0.16), "Glass", segs=10, axis="Z")
+    mb.sphere(0.035, (0, 0, 0.03), "Glass", subdiv=2)
+    mb.cyl(0.032, 0.05, (0, 0, 0.31), "Wood", segs=8, axis="Z", r2=0.028)
+    mb.box((0.004, 0.004, 0.05), (0, -0.04, 0.27), "Dark", 0)                 # string
+    mb.box((0.075, 0.006, 0.055), (0, -0.045, 0.22), "Panel", 0.004)          # tag
+    mb.cyl(0.006, 0.008, (0, -0.049, 0.243), "Dark", segs=6)                  # tag hole
+    root = mb.build("Sample_Tube")
+    liquid(root, lambda l: (l.cyl(0.03, 0.2, (0, 0, 0.13), "Liquid", segs=10, axis="Z"), l.sphere(0.03, (0, 0, 0.035), "Liquid", subdiv=2)))
+    empty("TagFace", root, (0, -0.049, 0.215))
+    return root
+
+def sample_rack():
+    # Wooden rack for four tubes along X (0.15 apart); tubes stand at Slot0..3, 0.02 above the table.
+    mb = MB()
+    mb.box((0.66, 0.14, 0.03), (0, 0, 0.015), "Wood", 0.008)
+    mb.box((0.66, 0.12, 0.025), (0, 0, 0.13), "Wood", 0.006)
+    for x in (-0.32, 0.32): mb.box((0.03, 0.12, 0.15), (x, 0, 0.075), "Wood", 0.006)
+    for i in range(4): mb.cyl(0.042, 0.03, (-0.225 + i * 0.15, 0, 0.13), "Dark", segs=10, axis="Z")
+    root = mb.build("Sample_Rack")
+    for i in range(4): empty(f"Slot{i}", root, (-0.225 + i * 0.15, 0, 0.03))
+    return root
+
 def table():
     # Heavy workbench, origin on the floor; top surface at z = 1.0, 5 x 2.4 m.
     mb = MB()
@@ -772,7 +797,7 @@ SHARED = [
     *[(lambda w=w, h=h: disp_glyph(w, h)) for (w, h) in ((1, 1), (2, 1), (2, 2))],
     disp_rune, lambda: disp_rune(2), lambda: disp_script(2), lambda: disp_script(3),
     test_plunger, test_lever, lamp,
-    lambda: book("Book_Manual", "Accent"), lambda: book("Book_Log", "Dark"), book_sheet, table, workshop_room,
+    lambda: book("Book_Manual", "Accent"), lambda: book("Book_Log", "Dark"), book_sheet, table, sample_tube, sample_rack, workshop_room,
     fill_vent, fill_grille, fill_plate, fill_pipes, fill_porthole, fill_fan, fill_hatch,
     in_tank, in_flask, in_hopper, in_sphere, out_tank, out_vat, out_flask, vial, pipe, flange,
 ]

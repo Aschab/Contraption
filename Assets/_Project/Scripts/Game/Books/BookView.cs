@@ -118,14 +118,14 @@ namespace Contraption.Game
             }
         }
 
-        // In front of the camera, filling about 46% of the view width on its side, pages facing the viewer.
+        // In front of the camera, filling about 42% of the view width on its side (the machine stays visible), pages facing the viewer.
         private void HeldPose(out Vector3 pos, out Quaternion rot)
         {
             var c = _cam.transform;
             float tan = Mathf.Tan(_cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-            float d = 0.86f / (0.46f * 2f * tan * _cam.aspect);
+            float d = 0.86f / (0.42f * 2f * tan * _cam.aspect);
             float viewWidth = 2f * d * tan * _cam.aspect;
-            pos = c.position + c.forward * d + c.right * (_leftSide ? -0.25f : 0.25f) * viewWidth - c.up * 0.04f * viewWidth;
+            pos = c.position + c.forward * d + c.right * (_leftSide ? -0.27f : 0.27f) * viewWidth - c.up * 0.04f * viewWidth;
             rot = Quaternion.LookRotation(c.up, -c.forward) * Quaternion.Euler(-8f, 0f, _leftSide ? -4f : 4f);
         }
     }

@@ -82,7 +82,53 @@ namespace Contraption.Game
 
         private static Vector2 Lattice(int p, float size) => new((p % 3 - 1) * size / 2f, (1 - p / 3) * size / 2f);
 
-        // An input liquid: a cog in the liquid's colour with dots for its place in the input pool.
+        // Sample tag symbols: simple and unmistakable, one per tube in the input pool (also drawn on the tube tags).
+        public const int SampleSymbolCount = 8;
+
+        public void SampleSymbol(Vector2 c, float s, int index, Color color, float w = 0.0035f, int layer = 1)
+        {
+            float h = s / 2f;
+            switch (index % SampleSymbolCount)
+            {
+                case 0: // triangle
+                    Line(c + new Vector2(-h, -h * 0.8f), c + new Vector2(h, -h * 0.8f), w, color, layer);
+                    Line(c + new Vector2(h, -h * 0.8f), c + new Vector2(0f, h), w, color, layer);
+                    Line(c + new Vector2(0f, h), c + new Vector2(-h, -h * 0.8f), w, color, layer);
+                    break;
+                case 1: Ring(c, h, w, color, 12, layer); break;
+                case 2: // square
+                    Line(c + new Vector2(-h, -h), c + new Vector2(h, -h), w, color, layer);
+                    Line(c + new Vector2(h, -h), c + new Vector2(h, h), w, color, layer);
+                    Line(c + new Vector2(h, h), c + new Vector2(-h, h), w, color, layer);
+                    Line(c + new Vector2(-h, h), c + new Vector2(-h, -h), w, color, layer);
+                    break;
+                case 3: // X
+                    Line(c + new Vector2(-h, -h), c + new Vector2(h, h), w, color, layer);
+                    Line(c + new Vector2(-h, h), c + new Vector2(h, -h), w, color, layer);
+                    break;
+                case 4: // +
+                    Line(c + new Vector2(-h, 0f), c + new Vector2(h, 0f), w, color, layer);
+                    Line(c + new Vector2(0f, -h), c + new Vector2(0f, h), w, color, layer);
+                    break;
+                case 5: // diamond with a dot
+                    Line(c + new Vector2(0f, -h), c + new Vector2(h, 0f), w, color, layer);
+                    Line(c + new Vector2(h, 0f), c + new Vector2(0f, h), w, color, layer);
+                    Line(c + new Vector2(0f, h), c + new Vector2(-h, 0f), w, color, layer);
+                    Line(c + new Vector2(-h, 0f), c + new Vector2(0f, -h), w, color, layer);
+                    Rect(c, new Vector2(w * 2f, w * 2f), color, layer + 1);
+                    break;
+                case 6: // two bars
+                    Line(c + new Vector2(-h, h * 0.45f), c + new Vector2(h, h * 0.45f), w * 1.3f, color, layer);
+                    Line(c + new Vector2(-h, -h * 0.45f), c + new Vector2(h, -h * 0.45f), w * 1.3f, color, layer);
+                    break;
+                default: // three dots
+                    foreach (var p in new[] { new Vector2(0f, h * 0.7f), new Vector2(-h * 0.7f, -h * 0.5f), new Vector2(h * 0.7f, -h * 0.5f) })
+                        Disc(c + p, w * 1.4f, color, layer);
+                    break;
+            }
+        }
+
+        // An input liquid: a cog in the liquid's colour carrying its sample tag symbol.
         public void LiquidIcon(Vector2 c, float r, Liquid l, int poolIndex)
         {
             const int teeth = 8;
@@ -94,9 +140,8 @@ namespace Contraption.Game
             }
             Disc(c, r, Ink, 1);
             Disc(c, r * 0.85f, Art.LiquidColor(l.Color), 2);
-            int dots = poolIndex + 1;
-            for (int i = 0; i < dots; i++)
-                Rect(c + new Vector2((i - (dots - 1) / 2f) * r * 0.42f, 0f), new Vector2(r * 0.28f, r * 0.28f), Ink, 3);
+            Disc(c, r * 0.62f, Paper, 3);
+            SampleSymbol(c, r * 0.8f, poolIndex, Ink, r * 0.12f, 4);
         }
 
         // "→◯" (goes in) and "◯→" (comes out).

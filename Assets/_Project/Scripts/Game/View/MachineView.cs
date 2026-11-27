@@ -92,7 +92,7 @@ namespace Contraption.Game
             BuildTops(rng, freeTops);
             BuildOutput(def);
 
-            Bounds = MeasureBounds();
+            UpdateBounds();
             Focus = 0;
             _session.Changed += Refresh;
             _session.Tested += OnTested;
@@ -245,6 +245,9 @@ namespace Contraption.Game
             }
             return min;
         }
+
+        // Call after moving the machine.
+        public void UpdateBounds() => Bounds = MeasureBounds();
 
         private Bounds MeasureBounds()
         {

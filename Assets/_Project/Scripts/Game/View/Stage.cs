@@ -9,13 +9,13 @@ namespace Contraption.Game
     {
         private static DepthOfField _dof;
 
-        // Background blur once the camera sits at the table: sharp up to the machine, blurred beyond.
-        public static void SetFocus(float distance, float amount)
+        // Background blur once the camera sits at the table: sharp up to sharpDepth (view depth), blurred beyond.
+        public static void SetFocus(float sharpDepth, float amount)
         {
             if (_dof == null) return;
             _dof.active = amount > 0.01f;
-            _dof.gaussianStart.Override(distance + 0.6f);
-            _dof.gaussianEnd.Override(distance + 0.6f + Mathf.Lerp(30f, 4f, amount));
+            _dof.gaussianStart.Override(sharpDepth);
+            _dof.gaussianEnd.Override(sharpDepth + Mathf.Lerp(30f, 4f, amount));
             _dof.gaussianMaxRadius.Override(Mathf.Lerp(0.5f, 1.5f, amount));
         }
 

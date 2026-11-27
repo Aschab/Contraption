@@ -18,7 +18,10 @@ namespace Contraption.Game
         {
             GUILayout.BeginArea(area, GUI.skin.box);
             _scroll = GUILayout.BeginScrollView(_scroll);
+            GUILayout.BeginHorizontal();
             GUILayout.Label("<b>MACHINE LAB</b>  (F1 hides)", Rich());
+            if (GUILayout.Toggle(lab.PanelsHidden, "Hide side panels")) lab.PanelsHidden = true;
+            GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Seed", GUILayout.Width(40));

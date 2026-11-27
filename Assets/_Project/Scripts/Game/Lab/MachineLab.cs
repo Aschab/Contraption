@@ -23,7 +23,15 @@ namespace Contraption.Game
         private Workshop _workshop;
         private BookDesk _desk;
         private IntroFlight _intro;
-        private float _blur;
+        private SampleRack _rack;
+        private float _blur, _lean, _leanSide = 1f;
+        private const string PanelsKey = "contraption.lab.panels";
+
+        public bool PanelsHidden
+        {
+            get => PlayerPrefs.GetInt(PanelsKey, 0) == 1;
+            set => PlayerPrefs.SetInt(PanelsKey, value ? 1 : 0);
+        }
         private bool _panelVisible = true;
         private float _uiScale = 1f;
 
@@ -54,6 +62,7 @@ namespace Contraption.Game
             _view.transform.SetPositionAndRotation(_workshop.MachineAnchor, Quaternion.identity);
             _view.transform.localScale = Vector3.one * Workshop.MachineScale;
             _desk = new BookDesk(_kits[KitIndex], _workshop.Root, _camera, _workshop.ManualRest, _workshop.LogRest);
+            _rack = new SampleRack(_kits[KitIndex], _workshop.Root, _workshop.RackOrigin);
             Settings = LoadSettings();
             SeedText = PlayerPrefs.GetString(SeedKey, "1");
             Generate();
@@ -73,7 +82,8 @@ namespace Contraption.Game
             _uiScale = Mathf.Max(1f, Screen.height / 1000f);
             if (Keyboard.current != null && Keyboard.current.f1Key.wasPressedThisFrame) _panelVisible = !_panelVisible;
 
-            float left = AnalyzerHud.Width * _uiScale, right = _panelVisible ? LabPanel.Width * _uiScale : 0f;
+            bool shown = !PanelsHidden;
+            float left = shown ? AnalyzerHud.Width * _uiScale : 0f, right = shown && _panelVisible ? LabPanel.Width * _uiScale : 0f;
             _camera.rect = new Rect(left / Screen.width, 0f, 1f - (left + right) / Screen.width, 1f);
 
             if (_intro != null)
@@ -88,6 +98,7 @@ namespace Contraption.Game
                 if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && !OverGui(GuiMouse())) GUIUtility.keyboardControl = 0;
                 bool keyboardFree = GUIUtility.keyboardControl == 0;
                 _desk.Tick(_camera, OverGui, keyboardFree);
+                _rack.Tick(_camera, OverGui, _input.ActivePort);
                 _input.Tick(Session, _view, _camera, keyboardFree, !_desk.CapturesArrows, OverGui);
             }
         }
@@ -96,6 +107,11 @@ namespace Contraption.Game
         {
             GUI.matrix = Matrix4x4.Scale(new Vector3(_uiScale, _uiScale, 1f));
             float h = Screen.height / _uiScale, w = Screen.width / _uiScale;
+            if (PanelsHidden)
+            {
+                if (GUI.Button(new Rect(w - 110f, 6f, 104f, 24f), "Show panels")) PanelsHidden = false;
+                return;
+            }
             if (Session != null) _hud.Draw(new Rect(0f, 0f, AnalyzerHud.Width, h), Session, _input);
             if (_panelVisible) _panel.Draw(new Rect(w - LabPanel.Width, 0f, LabPanel.Width, h), this);
         }
@@ -103,6 +119,7 @@ namespace Contraption.Game
         private bool OverGui(Vector2 guiPos)
         {
             float x = guiPos.x / _uiScale;
+            if (PanelsHidden) return x > Screen.width / _uiScale - 112f && guiPos.y / _uiScale < 32f;
             return x < AnalyzerHud.Width || (_panelVisible && x > Screen.width / _uiScale - LabPanel.Width);
         }
 
@@ -156,8 +173,17 @@ namespace Contraption.Game
             Session.Changed += UpdateGoalDistance;
             UpdateGoalDistance();
             _input.ActivePort = 0;
+            _view.transform.position = _workshop.MachineAnchor;
             _view.Build(Session, _kits[KitIndex]);
+            // Keep the machine clear of the sample racks on the left.
+            float clear = _rack.RightEdge(def.InputPool.Count) + 0.12f - _view.Bounds.min.x;
+            if (clear > 0f)
+            {
+                _view.transform.position += new Vector3(clear, 0f, 0f);
+                _view.UpdateBounds();
+            }
             _desk.Bind(Session);
+            _rack.Bind(Session);
             Frame();
         }
 
@@ -244,26 +270,64 @@ namespace Contraption.Game
             Status = "Start state replaced with the current state.";
         }
 
-        // Looking slightly down at the table: the machine plus both books at rest.
+        // Looking slightly down at the table: the machine, the books at rest and the sample racks.
         private (Vector3 pos, Vector3 look) TableView()
         {
             var b = _view.Bounds;
-            foreach (var rest in new[] { _workshop.ManualRest, _workshop.LogRest })
-                b.Encapsulate(new Bounds(rest, new Vector3(0.9f, 0.05f, 0.6f)));
+            b.Encapsulate(_desk.RestBounds);
+            b.Encapsulate(new Bounds(_workshop.RackOrigin + new Vector3(0f, 0.2f, 0f), new Vector3(0.7f, 0.4f, 0.2f)));
+            return Fit(b, 1f);
+        }
+
+        // With a book up, the camera leans toward the machine and backs off so it fits beside the book (58% of the view).
+        private (Vector3 pos, Quaternion rot) FocusView(float side)
+        {
+            var b = _view.Bounds;
+            var (pos, look) = Fit(b, 0.58f);
+            float tanH = Mathf.Tan(_camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * _camera.aspect;
+            float yaw = Mathf.Atan(0.42f * tanH) * Mathf.Rad2Deg;
+            return (pos, Quaternion.AngleAxis(side * yaw, Vector3.up) * Quaternion.LookRotation(look - pos));
+        }
+
+        private (Vector3 pos, Vector3 look) Fit(Bounds b, float widthShare)
+        {
             var dir = Quaternion.Euler(22f, 0f, 0f) * Vector3.forward;
             float halfV = Mathf.Tan(_camera.fieldOfView * 0.5f * Mathf.Deg2Rad);
-            float margin = 0.12f;
-            float dist = Mathf.Max((b.extents.y + b.extents.z * 0.4f + margin) / halfV, (b.extents.x + margin) / (halfV * _camera.aspect)) + b.extents.z;
+            const float margin = 0.12f;
+            float dist = Mathf.Max((b.extents.y + b.extents.z * 0.4f + margin) / halfV,
+                (b.extents.x + margin) / (halfV * _camera.aspect * widthShare)) + b.extents.z;
             return (b.center - dir * dist, b.center);
         }
 
         private void Frame()
         {
             if (_intro != null) return;
+            int side = _desk.FocusSide;
+            if (side != 0) _leanSide = side;
+            _lean = Mathf.MoveTowards(_lean, side != 0 ? 1f : 0f, Time.deltaTime * 2.5f);
             var (pos, look) = TableView();
-            _camera.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(look - pos));
+            var rot = Quaternion.LookRotation(look - pos);
+            if (_lean > 0f)
+            {
+                var (fp, fr) = FocusView(_leanSide);
+                float k = Mathf.SmoothStep(0f, 1f, _lean);
+                pos = Vector3.Lerp(pos, fp, k);
+                rot = Quaternion.Slerp(rot, fr, k);
+            }
+            _camera.transform.SetPositionAndRotation(pos, rot);
             _blur = Mathf.MoveTowards(_blur, 1f, Time.deltaTime / 1.2f);
-            Stage.SetFocus(Vector3.Distance(pos, _view.Bounds.center), _blur);
+            Stage.SetFocus(SharpDepth(), _blur);
+        }
+
+        // View depth of the farthest point that must stay sharp (table, books, racks, machine).
+        private float SharpDepth()
+        {
+            var cam = _camera.transform;
+            float depth = 0f;
+            foreach (var p in Workshop.SharpPoints) depth = Mathf.Max(depth, Vector3.Dot(p - cam.position, cam.forward));
+            var b = _view.Bounds;
+            depth = Mathf.Max(depth, Vector3.Dot(b.max - cam.position, cam.forward));
+            return depth + 0.3f;
         }
 
         private void LateUpdate()
