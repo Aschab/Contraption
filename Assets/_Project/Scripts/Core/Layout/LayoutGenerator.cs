@@ -182,6 +182,7 @@ namespace Contraption.Core
             l.BaseStyle = rng.Pick(PartStyles.BaseStyles);
             l.DecorSeed = rng.NextULong();
             l.TestStyle = rng.Pick(PartStyles.TestTriggers);
+            Recolor(rng, l, rng.Pick(Palettes.All));
             FillEmpty(l);
         }
 
@@ -194,11 +195,25 @@ namespace Contraption.Core
                 {
                     if (!l.Fits(x, y, 1, 1)) continue;
                     bool big = l.Fits(x, y, 2, 2) && rng.Chance(0.35);
-                    l.Fillers.Add(big
+                    var f = big
                         ? new Placement { Style = rng.Pick(PartStyles.BigFillers), X = x, Y = y, W = 2, H = 2 }
-                        : new Placement { Style = rng.Pick(PartStyles.Fillers), X = x, Y = y });
+                        : new Placement { Style = rng.Pick(PartStyles.Fillers), X = x, Y = y };
+                    f.Tint = FillerTint(rng);
+                    l.Fillers.Add(f);
                 }
         }
+
+        // New scheme: alt panel tints on some parts and most fillers, glow colours spread over parts.
+        public static void Recolor(Rng rng, MachineLayout l, MachineColors palette)
+        {
+            l.Colors = palette.Clone();
+            int glows = l.Colors.Glows.Count;
+            foreach (var p in l.Controls) { p.Tint = rng.Chance(0.15) ? 1 : 0; p.Glow = rng.Range(0, glows); }
+            foreach (var p in l.Displays) { p.Tint = rng.Chance(0.15) ? 1 : 0; p.Glow = rng.Range(0, glows); }
+            foreach (var f in l.Fillers) f.Tint = FillerTint(rng);
+        }
+
+        private static int FillerTint(Rng rng) => rng.Chance(0.35) ? 1 : rng.Chance(0.2) ? 2 : 0;
 
         // Plain rectangle of 1x1 parts; always fits.
         private static MachineLayout Fallback(Rng rng, MachineDefinition def)

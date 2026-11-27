@@ -128,6 +128,13 @@ namespace Contraption.Game
             GUILayout.EndHorizontal();
             if (steps != l.ShowSteps) { l.ShowSteps = steps; lab.RebuildView(); }
 
+            var names = Array.ConvertAll(Palettes.All, c => c.Name);
+            GUILayout.BeginHorizontal();
+            if (Cycle("Colors", l.Colors?.Name ?? names[0], names, out var scheme))
+                Recolor(lab, l, Array.Find(Palettes.All, c => c.Name == scheme));
+            if (GUILayout.Button("Shuffle tints", GUILayout.Width(100)))
+                Recolor(lab, l, l.Colors ?? Palettes.All[0]);
+            GUILayout.EndHorizontal();
             if (Cycle("Top", l.TopStyle, PartStyles.TopStyles, out var top)) { l.TopStyle = top; lab.RebuildView(); }
             if (Cycle("Base", l.BaseStyle, PartStyles.BaseStyles, out var bottom)) { l.BaseStyle = bottom; lab.RebuildView(); }
             if (Cycle("Inputs", l.Inputs[0].Style, PartStyles.InputContainers, out var input))
@@ -154,6 +161,12 @@ namespace Contraption.Game
             if (GUILayout.Button("↓", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, 0, -1), "Moved");
             if (GUILayout.Button("→", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, 1, 0), "Moved");
             GUILayout.EndHorizontal();
+        }
+
+        private static void Recolor(MachineLab lab, MachineLayout l, MachineColors scheme)
+        {
+            LayoutGenerator.Recolor(new Rng((ulong)UnityEngine.Random.Range(1, int.MaxValue)), l, scheme);
+            lab.RebuildView();
         }
 
         private static void Edit(MachineLab lab, bool ok, string what)

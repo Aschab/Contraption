@@ -1,7 +1,12 @@
 {
   "name": "Contraption.Game",
   "rootNamespace": "Contraption.Game",
-  "references": ["Contraption.Core", "Unity.InputSystem"],
+  "references": [
+    "Contraption.Core",
+    "Unity.InputSystem",
+    "Unity.RenderPipelines.Core.Runtime",
+    "Unity.RenderPipelines.Universal.Runtime"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

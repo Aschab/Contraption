@@ -10,7 +10,7 @@ namespace Contraption.Game
         private const float AnimSpeed = 540f, SlideSpeed = 4f;
 
         private ControlDef _def;
-        private MachineKit _kit;
+        private Look _look;
         private Transform _moving;
         private Renderer _frame;
         private Quaternion _restRot;
@@ -25,7 +25,7 @@ namespace Contraption.Game
         public Vector3 StickCenter { get; private set; }
         public float Scale => Placement.W;
 
-        public static ControlView Create(MachineKit kit, Transform machine, Vector3 pos, int index, ControlDef def, Placement p, int labelGlyph)
+        public static ControlView Create(MachineKit kit, Look look, Transform machine, Vector3 pos, int index, ControlDef def, Placement p, int labelGlyph)
         {
             var go = new GameObject($"{def.Kind} {index}");
             go.transform.SetParent(machine, false);
@@ -37,9 +37,9 @@ namespace Contraption.Game
             var v = go.AddComponent<ControlView>();
             v.Index = index;
             v._def = def;
-            v._kit = kit;
+            v._look = look;
             v.Placement = p;
-            var body = kit.Spawn(p.Style, go.transform, Vector3.zero).transform;
+            var body = kit.Spawn(p.Style, go.transform, Vector3.zero, look).transform;
             v._moving = MachineKit.Find(body, "Moving");
             v._frame = MachineKit.FindSuffix(body, "_Frame")?.GetComponent<Renderer>();
             v._restRot = v._moving.localRotation;
@@ -71,7 +71,7 @@ namespace Contraption.Game
                 {
                     var at = Vector3.Lerp(a, b, def.Positions > 1 ? i / (float)(def.Positions - 1) : 0f);
                     Art.Prim(PrimitiveType.Cube, go.transform, new Vector3(at.x, at.y, -0.04f) + side,
-                        horizontal ? new Vector3(0.03f, 0.08f, 0.02f) : new Vector3(0.08f, 0.03f, 0.02f), kit.Dark);
+                        horizontal ? new Vector3(0.03f, 0.08f, 0.02f) : new Vector3(0.08f, 0.03f, 0.02f), look.Dark);
                 }
             }
             else if (def.Kind is ControlKind.Dial or ControlKind.Knob)
@@ -81,16 +81,16 @@ namespace Contraption.Game
                 {
                     var rot = Quaternion.Euler(0f, 0f, v.AngleFor(i));
                     var tick = Art.Prim(PrimitiveType.Cube, go.transform, v.StickCenter + new Vector3(0f, 0f, -0.04f) + rot * new Vector3(0f, radius, 0f),
-                        new Vector3(0.03f, 0.08f, 0.02f) * Mathf.Sqrt(s), kit.Dark).transform;
+                        new Vector3(0.03f, 0.08f, 0.02f) * Mathf.Sqrt(s), look.Dark).transform;
                     tick.localRotation = rot;
                 }
             }
             if (stick)
                 foreach (var dir in new[] { Vector2.up, Vector2.down, Vector2.left, Vector2.right })
                     Art.Prim(PrimitiveType.Cube, go.transform, v.StickCenter + new Vector3(dir.x, dir.y, 0f) * 0.36f * s + new Vector3(0f, 0f, -0.04f),
-                        new Vector3(0.07f, 0.07f, 0.02f) * s, kit.Dark).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            var label = Glyphs.Build(go.transform, new Vector3(0f, -p.H * MachineView.Cell / 2f + 0.17f, -0.035f), 0.045f, kit.Dark);
-            Glyphs.Paint(label, labelGlyph, kit.Dark, kit.Panel * 0.92f, 0f);
+                        new Vector3(0.07f, 0.07f, 0.02f) * s, look.Dark).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            var label = Glyphs.Build(go.transform, new Vector3(0f, -p.H * MachineView.Cell / 2f + 0.17f, -0.035f), 0.045f, look.Dark);
+            Glyphs.Paint(label, labelGlyph, look.Dark, look.Panel * 0.92f, 0f);
             return v;
         }
 
@@ -127,7 +127,7 @@ namespace Contraption.Game
 
         public void SetFocused(bool focused)
         {
-            if (_frame != null) Art.Paint(_frame, focused ? _kit.Glow : _kit.Trim, focused ? _kit.Glow * 0.8f : Color.black);
+            if (_frame != null) Art.Paint(_frame, focused ? _look.Glow : _look.Trim, focused ? _look.Glow * 0.8f : Color.black);
         }
 
         private void Update()

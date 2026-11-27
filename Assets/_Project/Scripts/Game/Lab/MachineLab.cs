@@ -35,6 +35,7 @@ namespace Contraption.Game
         private void Start()
         {
             if (_camera == null) _camera = Camera.main;
+            Stage.Build(_camera);
             _view = new GameObject("MachineView").AddComponent<MachineView>();
             _kits = Resources.LoadAll<MachineKit>("Kits");
             System.Array.Sort(_kits, (a, b) => string.CompareOrdinal(a.name, b.name));

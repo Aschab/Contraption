@@ -101,8 +101,14 @@ PI = math.pi
 
 def sz(w, h): return "" if (w, h) == (1, 1) else f"_{w}x{h}"
 
-def plate(mb, w, h, slot="Panel"):
-    mb.box((w * CELL - 0.14, 0.03, h * CELL - 0.14), (0, -0.015, 0), slot, 0.02)
+def plate(mb, w, h, slot="Panel", rivet=True):
+    # Chamfered panel with a raised inner field and corner rivets (concept art t1–t4).
+    W, H = w * CELL - 0.14, h * CELL - 0.14
+    mb.box((W, 0.03, H), (0, -0.015, 0), slot, 0.035)
+    mb.box((W - 0.1, 0.012, H - 0.1), (0, -0.034, 0), slot, 0.012)
+    if rivet:
+        for x in (-W / 2 + 0.05, W / 2 - 0.05):
+            for z in (-H / 2 + 0.05, H / 2 - 0.05): mb.cyl(0.018, 0.02, (x, -0.035, z), "Metal", segs=6)
 
 def frame(root, w=1, h=1):
     W, H = w * CELL - 0.1, h * CELL - 0.1
@@ -208,18 +214,20 @@ def ctl_joystick(s=1):
     return root
 
 # ---------------------------------------------------------------- displays
+def gem(mb, b, k):
+    # Octagonal faceted gem in a metal bezel: Bulb gets a flat table and a sloped crown.
+    rot = Matrix.Rotation(PI / 8, 3, 'Y')
+    mb.cyl(0.27 * k, 0.07, (0, -0.06, 0), "Metal", segs=8, bevel=0.015, rot_z=PI / 8)
+    mb.cyl(0.21 * k, 0.03, (0, -0.1, 0), "Dark", segs=8, rot_z=PI / 8)
+    b.cyl(0.19 * k, 0.05, (0, 0, 0), "Glow", segs=8, rot_z=PI / 8)
+    b.cyl(0.19 * k, 0.06 * k, (0, -0.025 - 0.03 * k, 0), "Glow", segs=8, r2=0.11 * k, rot_z=PI / 8)
+
 def disp_light(w=1, h=1):
     mb = MB(); plate(mb, w, h); b = MB()
     if (w, h) == (1, 1):
-        mb.cyl(0.27, 0.06, (0, -0.06, 0), "Metal", segs=8, bevel=0.015, rot_z=PI / 8)
-        mb.cyl(0.2, 0.04, (0, -0.1, 0), "Dark", segs=8, rot_z=PI / 8)
-        b.sphere(0.17, (0, 0, 0), "Glow"); at = (0, -0.15, 0)
+        gem(mb, b, 1.0); at = (0, -0.1, 0)
     elif w == h:   # big caged beacon
-        mb.cyl(0.72, 0.08, (0, -0.07, 0), "Metal", segs=12, bevel=0.02)
-        mb.cyl(0.6, 0.04, (0, -0.12, 0), "Dark", segs=12)
-        for a in (0, PI / 3, 2 * PI / 3):
-            mb.box((0.05, 0.05, 1.1), (0, -0.62, 0), "Metal", 0.01, rot=Matrix.Rotation(a, 3, 'Y'))
-        b.sphere(0.45, (0, 0, 0), "Glow", subdiv=2); at = (0, -0.25, 0)
+        gem(mb, b, 2.4); at = (0, -0.1, 0)
     else:          # neon tube
         horiz = w > h; L = max(w, h) * CELL - 0.45; ax = "X" if horiz else "Z"
         for sgn in (-1, 1):
@@ -337,6 +345,15 @@ def disp_script(w):
     empty("Screen", root, (0, -0.16, 0))
     return root
 
+def lamp():
+    # "Machine fixed" indicator on the chassis top: a small box with an octagonal lens.
+    mb = MB()
+    mb.box((0.62, 0.55, 0.6), (0, 0.4, 0.3), "Panel", 0.05)
+    mb.cyl(0.21, 0.06, (0, 0.1, 0.32), "Metal", segs=8, bevel=0.015, rot_z=PI / 8)
+    root = mb.build("Lamp")
+    b = MB(); b.cyl(0.15, 0.06, (0, 0, 0), "Dark", segs=8, rot_z=PI / 8); b.build("Bulb", root, (0, 0.06, 0.32))
+    return root
+
 # ---------------------------------------------------------------- fillers (decorative panels)
 def corner_rivets(mb, w=1, h=1, slot="Metal"):
     hx, hz = w * CELL / 2 - 0.15, h * CELL / 2 - 0.15
@@ -346,7 +363,7 @@ def corner_rivets(mb, w=1, h=1, slot="Metal"):
 def fill_vent():
     mb = MB(); plate(mb, 1, 1)
     for i in range(5): mb.box((0.66, 0.02, 0.06), (0, -0.035, -0.26 + i * 0.13), "Dark", 0)
-    corner_rivets(mb); return mb.build("Fill_Vent")
+    return mb.build("Fill_Vent")
 
 def fill_grille():
     mb = MB(); plate(mb, 1, 1, "Metal")
@@ -357,10 +374,10 @@ def fill_grille():
     return mb.build("Fill_Grille")
 
 def fill_plate():
-    mb = MB(); plate(mb, 1, 1, "Trim")
-    mb.box((0.6, 0.02, 0.08), (0, -0.035, 0.2), "Accent", 0.01)
-    mb.box((0.4, 0.02, 0.4), (0, -0.035, -0.12), "Panel", 0.02)
-    corner_rivets(mb); return mb.build("Fill_Plate")
+    mb = MB(); plate(mb, 1, 1)
+    mb.box((0.62, 0.02, 0.07), (0, -0.045, 0.24), "Dark", 0.01)
+    mb.box((0.42, 0.05, 0.4), (0, -0.05, -0.08), "Panel", 0.03)
+    return mb.build("Fill_Plate")
 
 def fill_pipes():
     # Pipes run the full cell height so stacked pipe panels join up.
@@ -527,7 +544,7 @@ def tile(kit, mask):
         if not filled(-sx, sz): edge(mb, kit, "side", 0, sz * Q / 2)
     n = bin(mask).count("1")
     if n in (1, 3): corner(mb, kit)
-    if n == 4: mb.cyl(0.05, 0.04, (0, -0.02, 0), "Metal", segs=6)   # bolt where four cells meet
+    if n == 4: mb.box((0.09, 0.05, 0.09), (0, -0.02, 0), "Metal", 0.015, rot=Matrix.Rotation(PI / 4, 3, 'Y'))   # diamond stud
     return mb.build(f"{kit}_Tile_{mask}")
 
 def edge(mb, kit, kind, cx, cz):
@@ -581,6 +598,16 @@ def top_dome(kit):
         mb.sphere(0.34, (0, 0.45, 0.1), "Glass", subdiv=2); mb.sphere(0.16, (0, 0.45, 0.2), "Glow", subdiv=1)
     return mb.build(f"{kit}_Top_Dome")
 
+def top_crystal(kit):
+    mb = MB(kit)
+    mb.cyl(0.26, 0.1, (0, 0.45, 0.05), "Metal", segs=8, axis="Z", bevel=0.02)
+    mb.cyl(0.18, 0.12, (0, 0.45, 0.16), "Trim", segs=8, axis="Z", bevel=0.02)
+    mb.cyl(0.13, 0.4, (0, 0.45, 0.42), "Panel", segs=6, axis="Z", r2=0.1)
+    mb.cyl(0.1, 0.22, (0, 0.45, 0.73), "Panel", segs=6, axis="Z", r2=0.0)
+    for a in (0, 2 * PI / 3, 4 * PI / 3):
+        mb.cyl(0.05, 0.22, (math.cos(a) * 0.13, 0.45 + math.sin(a) * 0.13, 0.3), "Panel", segs=6, axis="Z", r2=0.0)
+    return mb.build(f"{kit}_Top_Crystal")
+
 def top_antenna(kit):
     mb = MB(kit)
     mb.box((0.3, 0.3, 0.14), (0, 0.45, 0.07), "Trim", 0.03)
@@ -628,12 +655,12 @@ SHARED = [
     *[(lambda w=w, h=h: disp_gauge(w, h)) for (w, h) in ((1, 1), (2, 2), (2, 1), (3, 1))],
     *[(lambda w=w, h=h: disp_glyph(w, h)) for (w, h) in ((1, 1), (2, 1), (2, 2))],
     disp_rune, lambda: disp_rune(2), lambda: disp_script(2), lambda: disp_script(3),
-    test_plunger, test_lever,
+    test_plunger, test_lever, lamp,
     fill_vent, fill_grille, fill_plate, fill_pipes, fill_porthole, fill_fan, fill_hatch,
     in_tank, in_flask, in_hopper, in_sphere, out_tank, out_vat, out_flask, vial, pipe, flange,
 ]
 KIT = [*[(lambda k, m=m: tile(k, m)) for m in TILE_MASKS],
-       top_crest, top_chimney, top_dome, top_antenna, base_foot, base_plinth, base_skid]
+       top_crest, top_chimney, top_dome, top_antenna, top_crystal, base_foot, base_plinth, base_skid]
 
 def clear_scene(sc):
     for ob in list(sc.collection.all_objects):

@@ -24,6 +24,7 @@ namespace Contraption.Game
         private TestTriggerView _trigger;
         private MachineSession _session;
         private MachineKit _kit;
+        private Look _look;
         private MachineLayout _layout;
         private Transform _root;
         private float _baseH;
@@ -58,6 +59,7 @@ namespace Contraption.Game
             _kit = kit;
             var def = session.Definition;
             _layout = def.Layout;
+            _look = Look.From(kit, _layout.Colors);
             var rng = new Rng(_layout.DecorSeed);
             _root = new GameObject("Machine").transform;
             _root.SetParent(transform, false);
@@ -68,12 +70,12 @@ namespace Contraption.Game
 
             var glyphs = GlyphSet.Create(def);
             for (int i = 0; i < def.Displays.Count; i++)
-                _displays.Add(DisplayView.Create(kit, _root, Center(_layout.Displays[i]), def.Displays[i], _layout.Displays[i], glyphs));
+                _displays.Add(DisplayView.Create(kit, _look.ForPart(_layout.Displays[i]), _root, Center(_layout.Displays[i]), def.Displays[i], _layout.Displays[i], glyphs));
             for (int i = 0; i < def.Controls.Count; i++)
-                _controls.Add(ControlView.Create(kit, _root, Center(_layout.Controls[i]), i, def.Controls[i], _layout.Controls[i], glyphs.Labels[i]));
+                _controls.Add(ControlView.Create(kit, _look.ForPart(_layout.Controls[i]), _root, Center(_layout.Controls[i]), i, def.Controls[i], _layout.Controls[i], glyphs.Labels[i]));
             foreach (var f in _layout.Fillers)
             {
-                var go = kit.Spawn(f.Style, _root, Center(f));
+                var go = kit.Spawn(f.Style, _root, Center(f), _look.ForPart(f));
                 var spin = MachineKit.FindOptional(go.transform, "Spin");
                 if (spin != null) spin.gameObject.AddComponent<Spinner>().Axis = Art.AxisIn(spin, _root, Vector3.forward);
             }
@@ -82,7 +84,7 @@ namespace Contraption.Game
             for (int x = 0; x < _layout.Columns; x++) freeTops.Add(x);
             foreach (var input in _layout.Inputs)
             {
-                var c = LiquidContainerView.Create(kit, _root, input.Style, new Vector3(ColumnX(input.Column), TopY(input.Column), 0.4f));
+                var c = LiquidContainerView.Create(kit, _look, _root, input.Style, new Vector3(ColumnX(input.Column), TopY(input.Column), 0.4f));
                 c.SetFill(1f, 0f);
                 _inputs.Add(c);
                 freeTops.Remove(input.Column);
@@ -113,7 +115,7 @@ namespace Contraption.Game
                 {
                     int mask = (_layout.IsBody(i - 1, j - 1) ? 1 : 0) | (_layout.IsBody(i, j - 1) ? 2 : 0)
                         | (_layout.IsBody(i - 1, j) ? 4 : 0) | (_layout.IsBody(i, j) ? 8 : 0);
-                    if (mask != 0) _kit.Spawn("Tile_" + mask, _root, new Vector3(GridX(i), _baseH + j * Cell, 0f));
+                    if (mask != 0) _kit.Spawn("Tile_" + mask, _root, new Vector3(GridX(i), _baseH + j * Cell, 0f), _look);
                 }
         }
 
@@ -129,7 +131,7 @@ namespace Contraption.Game
                 for (int k = x; _layout.IsBody(k - 1, 0); k--) runIndex++;
                 if (feet && !runStart && !runEnd && runIndex % 2 == 1) continue;
                 float offset = feet ? (runStart ? -0.25f : runEnd ? 0.25f : 0f) : 0f;
-                _kit.Spawn(piece, _root, new Vector3(ColumnX(x) + offset, _baseH, 0f));
+                _kit.Spawn(piece, _root, new Vector3(ColumnX(x) + offset, _baseH, 0f), _look);
             }
         }
 
@@ -139,13 +141,13 @@ namespace Contraption.Game
             free.Sort();
             if (_layout.TestStyle != "Test_Lever" && free.Count >= 2)
             {
-                _trigger = TestTriggerView.Create(_kit, _root, _layout.TestStyle, new Vector3(ColumnX(free[0]), TopY(free[0]), 0f));
+                _trigger = TestTriggerView.Create(_kit, _look, _root, _layout.TestStyle, new Vector3(ColumnX(free[0]), TopY(free[0]), 0f));
                 free.RemoveAt(0);
             }
             else
             {
                 int row = Mathf.Min(_layout.TopOf(0), 1);
-                _trigger = TestTriggerView.Create(_kit, _root, "Test_Lever", new Vector3(GridX(0) - 0.02f, _baseH + (row + 0.5f) * Cell, 0.25f));
+                _trigger = TestTriggerView.Create(_kit, _look, _root, "Test_Lever", new Vector3(GridX(0) - 0.02f, _baseH + (row + 0.5f) * Cell, 0.25f));
             }
             rng.Shuffle(free);
             // The "fixed" lamp lives on the rightmost free top.
@@ -154,8 +156,7 @@ namespace Contraption.Game
             if (lampCol >= 0)
             {
                 free.Remove(lampCol);
-                var lamp = _kit.Spawn("Disp_Light", _root, new Vector3(ColumnX(lampCol), TopY(lampCol) + 0.35f, 0.45f), "FixedLamp");
-                lamp.transform.localScale = Vector3.one * 0.8f;
+                var lamp = _kit.Spawn("Lamp", _root, new Vector3(ColumnX(lampCol), TopY(lampCol), 0f), _look, "FixedLamp");
                 _fixedLamp = MachineKit.Find(lamp.transform, "Bulb").GetComponent<Renderer>();
             }
             bool hero = _kit.Decor.Length > 0 && free.Count >= 2 && rng.Chance(0.6);
@@ -163,7 +164,7 @@ namespace Contraption.Game
             {
                 var pos = new Vector3(ColumnX(free[i]), TopY(free[i]), 0f);
                 if (i == 0 && hero) Instantiate(_kit.Decor[rng.Range(0, _kit.Decor.Length)], _root, false).transform.localPosition = pos + new Vector3(0f, 0f, 0.4f);
-                else if (rng.Chance(0.55)) _kit.Spawn("Top_" + _layout.TopStyle, _root, pos);
+                else if (rng.Chance(0.55)) _kit.Spawn("Top_" + _layout.TopStyle, _root, pos, _look);
             }
         }
 
@@ -173,7 +174,7 @@ namespace Contraption.Game
             int last = _layout.Columns - 1;
             var exit = new Vector3(RightEdge, _baseH + (_layout.TopOf(last) + 0.5f) * Cell, PipeZ);
             float x = RightEdge + 0.7f;
-            _output = LiquidContainerView.Create(_kit, _root, _layout.Output.Style, Vector3.zero);
+            _output = LiquidContainerView.Create(_kit, _look, _root, _layout.Output.Style, Vector3.zero);
             float inletY = _output.Inlet != null ? _root.InverseTransformPoint(_output.Inlet.position).y : 1.5f;
 
             if (_layout.ShowSteps && def.Pipeline.Count > 0)
@@ -187,7 +188,7 @@ namespace Contraption.Game
                     int col = i / perCol, row = i % perCol;
                     float y = col % 2 == 0 ? top - row * VialStep : top - (perCol - 1 - row) * VialStep;
                     var pos = new Vector3(x + col * 0.7f, y, VialZ);
-                    var vial = LiquidContainerView.Create(_kit, _root, "Vial", pos);
+                    var vial = LiquidContainerView.Create(_kit, _look, _root, "Vial", pos);
                     _vials.Add(vial);
                     Route(prev, new Vector3(pos.x, pos.y, PipeZ));
                     prev = new Vector3(pos.x, pos.y, PipeZ);
@@ -225,11 +226,11 @@ namespace Contraption.Game
         {
             float len = Vector3.Distance(a, b);
             if (len < 0.01f) return;
-            var p = _kit.Spawn("Pipe", _root, a);
+            var p = _kit.Spawn("Pipe", _root, a, _look);
             p.transform.localRotation = Quaternion.FromToRotation(Vector3.right, (b - a).normalized);
             p.transform.localScale = new Vector3(len, 1f, 1f);
-            _kit.Spawn("Flange", _root, a).transform.localRotation = p.transform.localRotation;
-            _kit.Spawn("Flange", _root, b).transform.localRotation = p.transform.localRotation;
+            _kit.Spawn("Flange", _root, a, _look).transform.localRotation = p.transform.localRotation;
+            _kit.Spawn("Flange", _root, b, _look).transform.localRotation = p.transform.localRotation;
         }
 
         private static float ModelMinY(GameObject model)
@@ -321,7 +322,7 @@ namespace Contraption.Game
             }
 
             bool solved = _session.Solved;
-            if (_fixedLamp != null) Art.Paint(_fixedLamp, solved ? Color.green : _kit.Dark * 1.6f, solved ? Color.green * 3f : Color.black, 0.9f);
+            if (_fixedLamp != null) Art.Paint(_fixedLamp, solved ? Color.green : _look.Dark * 1.6f, solved ? Color.green * 3f : Color.black, 0.9f);
             SetFocus(Focus);
         }
 

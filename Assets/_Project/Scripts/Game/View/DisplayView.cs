@@ -6,7 +6,7 @@ namespace Contraption.Game
     public sealed class DisplayView : MonoBehaviour
     {
         private DisplayDef _def;
-        private MachineKit _kit;
+        private Look _look;
         private GlyphSet _glyphs;
         private Renderer[][] _strokes;   // rune: one set; script: one set per letter
         private Renderer _cursor;
@@ -19,17 +19,17 @@ namespace Contraption.Game
         private bool _linear;
         private float _needleAngle, _needleTarget;
 
-        public static DisplayView Create(MachineKit kit, Transform machine, Vector3 pos, DisplayDef def, Placement p, GlyphSet glyphs)
+        public static DisplayView Create(MachineKit kit, Look look, Transform machine, Vector3 pos, DisplayDef def, Placement p, GlyphSet glyphs)
         {
             var go = new GameObject($"{def.Kind} display");
             go.transform.SetParent(machine, false);
             go.transform.localPosition = pos;
             var v = go.AddComponent<DisplayView>();
             v._def = def;
-            v._kit = kit;
+            v._look = look;
             v._glyphs = glyphs;
 
-            var body = kit.Spawn(p.Style, go.transform, Vector3.zero).transform;
+            var body = kit.Spawn(p.Style, go.transform, Vector3.zero, look).transform;
             switch (def.Kind)
             {
                 case DisplayKind.Light: v._bulb = MachineKit.Find(body, "Bulb").GetComponent<Renderer>(); break;
@@ -62,7 +62,7 @@ namespace Contraption.Game
             if (!_script)
             {
                 float size = 0.42f * p.W;
-                _strokes = new[] { Glyphs.BuildStrokes(root, c, size, 0.05f * p.W, _kit.Glow) };
+                _strokes = new[] { Glyphs.BuildStrokes(root, c, size, 0.05f * p.W, _look.Glow) };
                 return;
             }
             float width = p.W * MachineView.Cell - 0.6f;
@@ -70,10 +70,10 @@ namespace Contraption.Game
             float letter = Mathf.Min(0.36f, pitch * 0.7f);
             _strokes = new Renderer[GlyphSet.WordLength][];
             for (int i = 0; i < GlyphSet.WordLength; i++)
-                _strokes[i] = Glyphs.BuildStrokes(root, c + new Vector3((i - GlyphSet.WordLength / 2f) * pitch, 0f, 0f), letter, 0.04f, _kit.Glow);
+                _strokes[i] = Glyphs.BuildStrokes(root, c + new Vector3((i - GlyphSet.WordLength / 2f) * pitch, 0f, 0f), letter, 0.04f, _look.Glow);
             _cursor = Art.Prim(PrimitiveType.Cube, root, c + new Vector3(GlyphSet.WordLength / 2f * pitch, -letter / 2f, 0f),
-                new Vector3(letter * 0.6f, 0.05f, 0.015f), _kit.Glow).GetComponent<Renderer>();
-            Art.Paint(_cursor, _kit.Glow, _kit.Glow * 1.5f);
+                new Vector3(letter * 0.6f, 0.05f, 0.015f), _look.Glow).GetComponent<Renderer>();
+            Art.Paint(_cursor, _look.Glow, _look.Glow * 1.5f);
         }
 
         private static Renderer[] Children(Transform body, string prefix, int count)
@@ -88,7 +88,7 @@ namespace Contraption.Game
             int value = MachineRules.DisplayValue(_def, state);
             MachineRules.DisplayRange(_def, out int min, out int max);
             float norm = max > min ? (value - min) / (float)(max - min) : 0f;
-            Color on = _kit.Glow, off = _kit.Dark * 1.6f;
+            Color on = _look.Glow, off = _look.Dark * 1.6f;
 
             switch (_def.Kind)
             {

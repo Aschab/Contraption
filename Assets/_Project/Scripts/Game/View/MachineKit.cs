@@ -22,7 +22,7 @@ namespace Contraption.Game
         public GameObject[] Decor;
         public Shader LiquidShader, ParticleShader;
 
-        [NonSerialized] private Dictionary<string, Material> _materials;
+        [NonSerialized] private Look _look;
         [NonSerialized] private Dictionary<string, GameObject> _pieces;
 
         // "<Prefix>_<name>" first, then the shared "<name>". Throws if neither exists.
@@ -43,16 +43,10 @@ namespace Contraption.Game
             catch (InvalidOperationException) { return false; }
         }
 
-        public GameObject Spawn(string pieceName, Transform parent, Vector3 localPos, string name = null) =>
-            Spawn(Get(pieceName), parent, localPos, name);
+        public GameObject Spawn(string pieceName, Transform parent, Vector3 localPos, Look look = null, string name = null) =>
+            Spawn(Get(pieceName), parent, localPos, look, name);
 
-        public Color ColorOf(Slot s) => s switch
-        {
-            Slot.Body => Body, Slot.Trim => Trim, Slot.Panel => Panel, Slot.Metal => Metal, Slot.Accent => Accent,
-            Slot.Glow => Glow, Slot.Dark => Dark, Slot.Glass => Glass, _ => Liquid,
-        };
-
-        public GameObject Spawn(GameObject model, Transform parent, Vector3 localPos, string name = null)
+        public GameObject Spawn(GameObject model, Transform parent, Vector3 localPos, Look look = null, string name = null)
         {
             var go = Instantiate(model, parent, false);
             go.transform.localPosition = localPos;
@@ -61,7 +55,7 @@ namespace Contraption.Game
             {
                 var mats = r.sharedMaterials;
                 for (int i = 0; i < mats.Length; i++)
-                    if (mats[i] != null && TryGetMaterial(mats[i].name, out var m)) mats[i] = m;
+                    if (mats[i] != null && (look ?? DefaultLook()).TryGet(mats[i].name, out var m)) mats[i] = m;
                 r.sharedMaterials = mats;
             }
             return go;
@@ -77,44 +71,7 @@ namespace Contraption.Game
             return _liquid;
         }
 
-        private bool TryGetMaterial(string materialName, out Material m)
-        {
-            if (_materials == null) BuildMaterials();
-            string slot = materialName.Split('.', ' ')[0];
-            return _materials.TryGetValue(slot, out m);
-        }
-
-        private void BuildMaterials()
-        {
-            _materials = new Dictionary<string, Material>();
-            var lit = Shader.Find("Universal Render Pipeline/Lit");
-            foreach (Slot s in Enum.GetValues(typeof(Slot)))
-            {
-                var m = new Material(lit) { name = $"{name}_{s}" };
-                var c = ColorOf(s);
-                m.SetColor("_BaseColor", c);
-                m.SetFloat("_Smoothness", s == Slot.Metal || s == Slot.Glass ? 0.7f : 0.3f);
-                m.SetFloat("_Metallic", s == Slot.Metal ? 0.5f : 0f);
-                m.EnableKeyword("_EMISSION");
-                m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-                m.SetColor("_EmissionColor", s == Slot.Glow ? c * 1.5f : Color.black);
-                if (s == Slot.Glass) MakeTransparent(m, c.a);
-                _materials[s.ToString()] = m;
-            }
-        }
-
-        private static void MakeTransparent(Material m, float alpha)
-        {
-            m.SetFloat("_Surface", 1f);
-            m.SetFloat("_Blend", 0f);
-            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-            m.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
-            m.SetFloat("_ZWrite", 0f);
-            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            m.renderQueue = (int)RenderQueue.Transparent;
-            var c = m.GetColor("_BaseColor");
-            m.SetColor("_BaseColor", new Color(c.r, c.g, c.b, alpha));
-        }
+        public Look DefaultLook() => _look ??= Look.From(this);
 
         // Finds a named part, ignoring Blender's duplicate suffixes ("Moving.001"). Throws with context if missing.
         public static Transform Find(Transform root, string partName)

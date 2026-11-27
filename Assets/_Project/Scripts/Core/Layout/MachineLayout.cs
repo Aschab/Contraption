@@ -22,6 +22,8 @@ namespace Contraption.Core
         public string TestStyle = "Test_Plunger";
         // Re-rolls small decoration (crest positions, rivet patterns) without moving parts.
         public ulong DecorSeed;
+        // Null for layouts saved before colours existed (the kit's colours are used).
+        public MachineColors Colors;
         // Shows the liquid after every pipeline step in glass vials (easier puzzles, tutorials).
         public bool ShowSteps;
 
@@ -57,6 +59,8 @@ namespace Contraption.Core
     {
         public string Style = "";
         public int X, Y, W = 1, H = 1;
+        // Panel colour: 0 main, 1 alt, 2 alt2. Glow: index into MachineColors.Glows.
+        public int Tint, Glow;
 
         public bool Overlaps(int x, int y, int w, int h) => X < x + w && x < X + W && Y < y + h && y < Y + H;
     }

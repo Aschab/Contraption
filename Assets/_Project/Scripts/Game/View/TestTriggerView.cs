@@ -12,13 +12,13 @@ namespace Contraption.Game
         private bool _lever;
         private float _t = 1f;
 
-        public static TestTriggerView Create(MachineKit kit, Transform machine, string style, Vector3 pos)
+        public static TestTriggerView Create(MachineKit kit, Look look, Transform machine, string style, Vector3 pos)
         {
             var go = new GameObject("Test trigger");
             go.transform.SetParent(machine, false);
             go.transform.localPosition = pos;
             var v = go.AddComponent<TestTriggerView>();
-            var body = kit.Spawn(style, go.transform, Vector3.zero).transform;
+            var body = kit.Spawn(style, go.transform, Vector3.zero, look).transform;
             v._lever = style == "Test_Lever";
             v._moving = MachineKit.Find(body, "Moving");
             v._restPos = v._moving.localPosition;
@@ -41,8 +41,8 @@ namespace Contraption.Game
                 (new Vector3(c.x - hw, c.y, z), new Vector3(0.05f, hh * 2f, 0.03f)), (new Vector3(c.x + hw, c.y, z), new Vector3(0.05f, hh * 2f, 0.03f)),
             })
             {
-                var bar = Art.Prim(PrimitiveType.Cube, v._focusFrame.transform, at, size, kit.Glow);
-                Art.Paint(bar.GetComponent<Renderer>(), kit.Glow, kit.Glow * 1.5f);
+                var bar = Art.Prim(PrimitiveType.Cube, v._focusFrame.transform, at, size, look.Glow);
+                Art.Paint(bar.GetComponent<Renderer>(), look.Glow, look.Glow * 1.5f);
             }
             v._focusFrame.SetActive(false);
             return v;

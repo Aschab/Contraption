@@ -46,14 +46,14 @@ namespace Contraption.Game
             }
         }
 
-        public static LiquidContainerView Create(MachineKit kit, Transform parent, string style, Vector3 pos, float scale = 1f)
+        public static LiquidContainerView Create(MachineKit kit, Look look, Transform parent, string style, Vector3 pos, float scale = 1f)
         {
             var go = new GameObject(style);
             go.transform.SetParent(parent, false);
             go.transform.localPosition = pos;
             go.transform.localScale = Vector3.one * scale;
             var v = go.AddComponent<LiquidContainerView>();
-            var body = kit.Spawn(style, go.transform, Vector3.zero).transform;
+            var body = kit.Spawn(style, go.transform, Vector3.zero, look).transform;
             v._liquid = MachineKit.Find(body, "Liquid").GetComponent<Renderer>();
             v._liquid.sharedMaterial = kit.LiquidMaterial();
             v._liquid.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

@@ -25,7 +25,7 @@ namespace Contraption.Core
         public static readonly string[] BigFillers = { "Fill_Fan_2x2", "Fill_Hatch_2x2" };
         public static readonly string[] InputContainers = { "In_Flask", "In_Tank", "In_Hopper", "In_Sphere" };
         public static readonly string[] OutputContainers = { "Out_Tank", "Out_Vat", "Out_Flask" };
-        public static readonly string[] TopStyles = { "Crest", "Chimney", "Dome", "Antenna" };
+        public static readonly string[] TopStyles = { "Crest", "Chimney", "Dome", "Antenna", "Crystal" };
         public static readonly string[] BaseStyles = { "Foot", "Plinth", "Skid" };
         public static readonly string[] TestTriggers = { "Test_Plunger", "Test_Lever" };
 
