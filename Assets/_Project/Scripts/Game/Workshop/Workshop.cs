@@ -35,6 +35,13 @@ namespace Contraption.Game
             var look = kit.DefaultLook();
             var room = kit.Spawn("Workshop_Room", Root, Vector3.zero, look);
             kit.Spawn("Table", Root, Vector3.zero, look);
+            // Textured Tripo props keep their own materials; matte them so they sit with the painted kit.
+            foreach (var r in kit.Spawn("Workshop_Props", Root, Vector3.zero, look).GetComponentsInChildren<Renderer>())
+                foreach (var m in r.materials)
+                {
+                    m.SetFloat("_Metallic", 0f);
+                    m.SetFloat("_Smoothness", 0.15f);
+                }
             foreach (var t in room.GetComponentsInChildren<Transform>())
             {
                 if (!t.name.StartsWith("Lamp")) continue;

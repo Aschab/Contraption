@@ -744,9 +744,6 @@ def workshop_room():
         mb.box((0.34, 2.2, 0.12), (-W / 2 + 0.34, y, 5.6), "Wood", 0)
     mb.box((3.0, 2.0, 0.1), (2, 4, H - 0.05), "Sky", 0)
     mb.box((14, 0.35, 0.45), (0, 4, 6.6), "Trim", 0.04)    # crane beam with chains
-    for x in (-4, 0, 3):
-        mb.box((0.06, 0.06, 2.4), (x, 4, 5.2), "Metal", 0)
-        mb.box((0.5, 0.5, 0.5), (x, 4, 3.8), "Metal", 0.06)
     mb.box((14, 1.4, 0.12), (0, L / 2 - 1.2, 1.0), "Wood", 0.03)   # back workbench
     for x in range(-6, 7, 3):
         mb.box((0.14, 1.2, 1.0), (x, L / 2 - 1.2, 0.5), "Wood", 0.02)
@@ -759,29 +756,77 @@ def workshop_room():
             mb.cyl(0.13, h, (W / 2 - 0.8, y, z + 0.04 + h / 2), "Glass", segs=8, axis="Z")
             mb.cyl(0.11, h * 0.7, (W / 2 - 0.8, y, z + 0.04 + h * 0.35), rnd.choice(["Glow", "Liquid", "Trim", "Accent"]), segs=8, axis="Z")
             mb.cyl(0.05, 0.1, (W / 2 - 0.8, y, z + 0.09 + h), "Wood", segs=6, axis="Z")
-    for i in range(10):                                   # crates and barrels
-        x, y = rnd.choice([(-12, -8), (-12, 8), (10, -8), (9, 9)])
-        x += rnd.uniform(-2, 2); y += rnd.uniform(-1.5, 1.5)
-        if i % 3 == 0:
-            mb.cyl(0.45, 1.1, (x, y, 0.55), "Wood", segs=10, axis="Z")
-            for z in (0.2, 0.9): mb.cyl(0.47, 0.08, (x, y, z), "Metal", segs=10, axis="Z")
-        else:
-            sz = rnd.uniform(0.7, 1.1)
-            mb.box((sz, sz, sz), (x, y, sz / 2), "Wood", 0.04)
-            mb.box((sz + 0.04, sz + 0.04, 0.1), (x, y, sz * 0.8), "Trim", 0.02)
-    mb.box((2.0, 1.2, 0.1), (6, 1, 0.9), "Metal", 0.02)   # cart with gears
-    for sx in (-0.9, 0.9):
-        for sy in (-0.5, 0.5):
-            mb.box((0.08, 0.08, 0.9), (6 + sx, 1 + sy, 0.45), "Metal", 0)
-            mb.cyl(0.14, 0.08, (6 + sx, 1 + sy, 0.14), "Dark", segs=8, axis="X")
-    for gx in (-0.5, 0.3):
-        mb.cyl(0.4, 0.15, (6 + gx, 1, 1.35), "Trim", segs=12, axis="Y", bevel=0.02)
-        mb.cyl(0.15, 0.17, (6 + gx, 1, 1.35), "Dark", segs=8, axis="Y")
     root = mb.build("Workshop_Room")
     for i, (x, y, z) in enumerate([(-6, 8, 3.2), (6, 8, 3.2), (-8, -2, 4.5), (0, 1.5, 4.5), (12, 2, 4.2)]):
         lamp = MB(); lamp.cyl(0.25, 0.2, (0, 0, 0), "Metal", segs=8, axis="Z", r2=0.12); lamp.sphere(0.12, (0, 0, -0.12), "Glow")
         lamp.box((0.03, 0.03, H - z), (0, 0, (H - z) / 2), "Metal", 0)
         lamp.build(f"Lamp{i}", root, (x, y, z))
+    return root
+
+PROPS_SRC = os.path.join(PROJECT, "Share/objects")
+# Tripo props from Share/objects: (file, size kind "h" height / "w" widest side, metres, (x, y, z), rot Z°, tilt X°).
+# Positions in room space (table at the origin, camera side -Y); z = base height. Hanging props get chains to the crane beam.
+PROPS = [
+    ("drill", "w", 4.2, (-2.2, 4.0, 3.9), 0, 0), ("orb", "h", 1.7, (2.0, 4.0, 3.7), 0, 0), ("jugs", "h", 1.3, (5.0, 4.0, 3.8), 0, 0),
+    ("boiler", "h", 2.4, (6.0, 8.6, 0), -15, 0), ("stuff", "h", 1.3, (3.0, 6.2, 0), 10, 0),
+    ("machine4", "h", 2.0, (-7.5, 7.8, 0), 20, 0), ("machine3", "w", 1.6, (9.0, 6.0, 0), -30, 0),
+    ("machine1", "w", 1.8, (-1.6, 9.85, 1.06), 0, 0), ("machine2", "w", 1.5, (2.3, 9.85, 1.06), 0, 0),
+    ("machine5", "w", 1.6, (-4.9, 9.7, 1.06), 0, 0), ("box3", "w", 1.0, (4.9, 9.8, 1.06), 8, 0), ("gear3", "h", 0.8, (6.3, 9.8, 1.06), 0, 0),
+    ("tools", "w", 2.2, (0.4, 10.6, 2.1), 0, 0), ("gear5", "h", 2.2, (-10.0, 10.0, 0), 0, -8), ("gear4", "h", 1.7, (10.0, 10.0, 0), 0, -8),
+    ("gear1", "h", 1.0, (-5.5, 6.0, 0), 25, 0), ("gear2", "h", 0.9, (8.0, 3.0, 0), -20, 0),
+    ("ladder", "h", 3.4, (13.4, 1.0, 0), -90, 0), ("box7", "h", 1.9, (-13.95, -1.0, 0), 90, 0),
+    ("box1", "h", 1.1, (-11.5, 8.0, 0), 12, 0), ("box8", "w", 1.0, (-11.5, 8.0, 1.08), 30, 0), ("box2", "w", 1.1, (-9.6, 9.3, 0), -8, 0),
+    ("chest", "w", 1.8, (11.5, 8.8, 0), -20, 0), ("box5", "w", 1.3, (-12.0, -7.0, 0), 5, 0), ("box6", "w", 1.3, (-12.0, -7.0, 0.62), -10, 0),
+    ("box4", "w", 0.8, (7.8, 9.6, 0), 25, 0),
+]
+HANG = {"drill": (-1.2, 1.2), "orb": (0.15,), "jugs": (0.0,)}   # chain x offsets
+BEAM_Z = 6.4
+
+def _import_prop(name, tex_size=1024):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=os.path.join(PROPS_SRC, name + ".glb"))
+    new = [o for o in bpy.data.objects if o not in before]
+    ob = next(o for o in new if o.type == 'MESH')
+    for o in new:
+        if o is not ob: bpy.data.objects.remove(o, do_unlink=True)
+    ob.data.transform(ob.matrix_world); ob.parent = None; ob.matrix_world = Matrix()
+    vs = [v.co for v in ob.data.vertices]
+    lo = Vector([min(v[i] for v in vs) for i in range(3)]); hi = Vector([max(v[i] for v in vs) for i in range(3)])
+    ob.data.transform(Matrix.Translation(-Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z))))
+    for i, m in enumerate(ob.data.materials):
+        m.name = f"Prop_{name}" + (f"_{i}" if i else "")
+        for n in m.node_tree.nodes:
+            if n.type != 'TEX_IMAGE' or not n.image: continue
+            src = n.image
+            if max(src.size) > tex_size: src.scale(tex_size, tex_size)
+            # Re-save as a small JPEG so the embedded FBX texture stays light (props sit in the blurred background).
+            w, h = src.size
+            px = [0.0] * (w * h * 4); src.pixels.foreach_get(px)
+            tmp = bpy.data.images.new("tmp", w, h); tmp.pixels.foreach_set(px)
+            path = os.path.join(bpy.app.tempdir, f"Prop_{name}_{i}.jpg")
+            tmp.filepath_raw = path; tmp.file_format = 'JPEG'; tmp.save()
+            bpy.data.images.remove(tmp)
+            img = bpy.data.images.load(path); img.pack()
+            n.image = img
+    return ob, hi - lo
+
+def workshop_props():
+    root = bpy.data.objects.new("Workshop_Props", None)
+    bpy.context.scene.collection.objects.link(root)
+    chains = MB()
+    for name, kind, size, pos, rz, tx in PROPS:
+        ob, dims = _import_prop(name)
+        for c in ob.users_collection: c.objects.unlink(ob)
+        bpy.context.scene.collection.objects.link(ob)
+        k = size / (dims.z if kind == "h" else max(dims.x, dims.y))
+        R = Matrix.Rotation(math.radians(rz), 4, 'Z') @ Matrix.Rotation(math.radians(tx), 4, 'X')
+        ob.data.transform(R @ Matrix.Scale(k, 4))
+        ob.name = "Prop_" + name; ob.parent = root; ob.location = pos
+        top = pos[2] + dims.z * k
+        for cx in HANG.get(name, ()):
+            x = pos[0] + cx
+            chains.box((0.05, 0.05, BEAM_Z - top + 0.15), (x, pos[1], (BEAM_Z + top - 0.15) / 2), "Metal", 0)
+    chains.build("Chains", root)
     return root
 
 # ---------------------------------------------------------------- catalog
@@ -797,7 +842,7 @@ SHARED = [
     *[(lambda w=w, h=h: disp_glyph(w, h)) for (w, h) in ((1, 1), (2, 1), (2, 2))],
     disp_rune, lambda: disp_rune(2), lambda: disp_script(2), lambda: disp_script(3),
     test_plunger, test_lever, lamp,
-    lambda: book("Book_Manual", "Accent"), lambda: book("Book_Log", "Dark"), book_sheet, table, sample_tube, sample_rack, workshop_room,
+    lambda: book("Book_Manual", "Accent"), lambda: book("Book_Log", "Dark"), book_sheet, table, sample_tube, sample_rack, workshop_room, workshop_props,
     fill_vent, fill_grille, fill_plate, fill_pipes, fill_porthole, fill_fan, fill_hatch,
     in_tank, in_flask, in_hopper, in_sphere, out_tank, out_vat, out_flask, vial, pipe, flange,
 ]
