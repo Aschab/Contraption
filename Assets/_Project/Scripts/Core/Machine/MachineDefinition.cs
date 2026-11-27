@@ -20,6 +20,8 @@ namespace Contraption.Core
         public int[] StartState = new int[0];
         // Register values used to author the manual. Debug/lab only; other register sets may also solve it.
         public int[] ReferenceSolution = new int[0];
+        // Visual arrangement; null for levels saved before layouts existed (the lab generates one).
+        public MachineLayout Layout;
 
         public int SlotCount() => Registers.Count + Controls.Count;
         public int ControlSlot(int controlIndex) => Registers.Count + controlIndex;

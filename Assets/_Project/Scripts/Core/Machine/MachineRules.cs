@@ -97,9 +97,21 @@ namespace Contraption.Core
         }
 
         // Only registers (state[0..R)) are read, so a register-only array is a valid argument.
-        public static Liquid Process(MachineDefinition def, int[] state, IReadOnlyList<Liquid> inputs)
+        public static Liquid Process(MachineDefinition def, int[] state, IReadOnlyList<Liquid> inputs) =>
+            Run(def, state, inputs, null);
+
+        // The mixed input followed by the liquid after every pipeline op; the last entry is the output.
+        public static List<Liquid> Stages(MachineDefinition def, int[] state, IReadOnlyList<Liquid> inputs)
+        {
+            var stages = new List<Liquid>();
+            Run(def, state, inputs, stages);
+            return stages;
+        }
+
+        private static Liquid Run(MachineDefinition def, int[] state, IReadOnlyList<Liquid> inputs, List<Liquid> stages)
         {
             var l = Liquid.Mix(inputs);
+            stages?.Add(l);
             foreach (var op in def.Pipeline)
             {
                 int r = state[op.Register];
@@ -128,6 +140,7 @@ namespace Contraption.Core
                         break;
                 }
                 l[op.Target] = Values.Clamp(t);
+                stages?.Add(l);
             }
             return l;
         }

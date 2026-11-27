@@ -102,6 +102,32 @@ namespace Contraption.Core.Tests
         }
 
         [Test]
+        public void LayoutsPlaceEveryPartOnTheBody()
+        {
+            var settings = new GeneratorSettings { MaxControls = 4, LargePartChance = 0.8 };
+            for (ulong seed = 1; seed <= 15; seed++)
+            {
+                var gen = MachineGenerator.Generate(seed, settings);
+                if (!gen.Success) continue;
+                var def = gen.Definition;
+                var l = def.Layout;
+                Assert.AreEqual(def.Controls.Count, l.Controls.Count);
+                Assert.AreEqual(def.Displays.Count, l.Displays.Count);
+                var used = new bool[l.Body.Length];
+                foreach (var p in l.AllPlacements())
+                    for (int y = p.Y; y < p.Y + p.H; y++)
+                        for (int x = p.X; x < p.X + p.W; x++)
+                        {
+                            Assert.IsTrue(l.IsBody(x, y), $"seed {seed}: {p.Style} off the body");
+                            Assert.IsFalse(used[y * l.Columns + x], $"seed {seed}: overlap at {x},{y}");
+                            used[y * l.Columns + x] = true;
+                        }
+                for (int i = 0; i < used.Length; i++) Assert.AreEqual(l.Body[i], used[i], $"seed {seed}: cell {i} not covered");
+                Assert.AreEqual(def.InputPorts, l.Inputs.Count);
+            }
+        }
+
+        [Test]
         public void JsonRoundTrip()
         {
             var def = MachineGenerator.Generate(7, new GeneratorSettings()).Definition;

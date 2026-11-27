@@ -26,6 +26,8 @@ namespace Contraption.Core
         public Liquid? LastOutput { get; private set; }
         public int Moves { get; private set; }
         public event Action Changed;
+        // Raised by Test before Changed, so views can animate the run.
+        public event Action Tested;
 
         public bool Solved => Array.TrueForAll(Verified, v => v);
 
@@ -86,6 +88,7 @@ namespace Contraption.Core
             LastOutput = output;
             Log.Insert(0, new TestRecord { Inputs = (int[])SelectedInputs.Clone(), Output = output });
             if (Log.Count > 12) Log.RemoveAt(Log.Count - 1);
+            Tested?.Invoke();
             Changed?.Invoke();
             return output;
         }

@@ -20,6 +20,10 @@ namespace Contraption.Core
         public double MaxGoalFraction = 0.1;
         // Share of reachable states from which the goal is unreachable (only Reset saves you).
         public double MaxTrapRatio = 0.2;
+        // Look: grid rows, share of body cells left as decorative panels, chance a part uses a bigger variant.
+        public int MinRows = 2, MaxRows = 5;
+        public double EmptyCells = 0.3;
+        public double LargePartChance = 0.35;
         public int MaxStates = 200_000;
         public int MaxAttempts = 200;
         public int StartTriesPerMachine = 5;

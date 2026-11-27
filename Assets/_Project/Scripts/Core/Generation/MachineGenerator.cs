@@ -59,6 +59,7 @@ namespace Contraption.Core
                     result.Definition = def;
                     result.Solve = solve;
                     result.Difficulty = Difficulty.Evaluate(def, solve);
+                    def.Layout = LayoutGenerator.Generate(def, seed, s);
                     return result;
                 }
             }
