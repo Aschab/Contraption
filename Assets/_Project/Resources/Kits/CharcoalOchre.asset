@@ -111,3 +111,4 @@ MonoBehaviour:
   - {fileID: 919132149155446097, guid: 33f02739027d146939d35fe0e337964d, type: 3}
   LiquidShader: {fileID: 4800000, guid: 460dfe6aefce54ca0b7914066c933b82, type: 3}
   ParticleShader: {fileID: 4800000, guid: 0406db5a14f94604a8c57ccfbc9f3b46, type: 3}
+  PaintedShader: {fileID: 4800000, guid: 8cd08300717a74486aa324c7e41d6a79, type: 3}

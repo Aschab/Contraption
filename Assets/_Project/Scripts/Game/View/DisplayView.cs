@@ -98,7 +98,12 @@ namespace Contraption.Game
                     break;
                 case DisplayKind.Bar:
                     int n = MachineRules.Readout(_def, state);
-                    for (int i = 0; i < _cells.Length; i++) Art.Paint(_cells[i], i < n ? on : off, i < n ? on * 1.5f : Color.black);
+                    // Bottom segment in the scheme's second glow colour (concept t1).
+                    for (int i = 0; i < _cells.Length; i++)
+                    {
+                        var c = i == 0 ? _look.Glow2 : on;
+                        Art.Paint(_cells[i], i < n ? c : off, i < n ? c * 1.5f : Color.black);
+                    }
                     break;
                 case DisplayKind.Gauge:
                     _needleTarget = _linear ? norm : Mathf.Lerp(70f, -70f, norm);

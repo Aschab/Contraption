@@ -390,7 +390,10 @@ def fill_pipes():
 def fill_porthole():
     mb = MB(); plate(mb, 1, 1)
     mb.cyl(0.36, 0.06, (0, -0.05, 0), "Metal", segs=12, bevel=0.015)
-    mb.cyl(0.29, 0.02, (0, -0.07, 0), "Dark", segs=12)
+    mb.cyl(0.29, 0.02, (0, -0.07, 0), "Liquid", segs=12)
+    for i in range(6):   # wavy line seen through the glass
+        x = -0.22 + i * 0.09; z = 0.04 if i % 2 else -0.04
+        mb.box((0.11, 0.01, 0.025), (x + 0.045, -0.085, 0.0), "Dark", 0, rot=Matrix.Rotation(-0.7 if i % 2 else 0.7, 3, 'Y'))
     mb.cyl(0.29, 0.02, (0, -0.1, 0), "Glass", segs=12)
     for i in range(6):
         a = i * PI / 3; mb.cyl(0.025, 0.03, (math.sin(a) * 0.33, -0.09, math.cos(a) * 0.33), "Trim", segs=6)
@@ -549,7 +552,9 @@ def tile(kit, mask):
 
 def edge(mb, kit, kind, cx, cz):
     if kit == "CO":
-        if kind == "side": mb.box((0.08, D + 0.04, Q), (0, D / 2, cz), "Trim", 0)
+        if kind == "side":
+            mb.box((0.08, D + 0.04, Q), (0, D / 2, cz), "Trim", 0)
+            mb.cyl(0.02, 0.03, (0, -0.035, cz), "Metal", segs=6)
         else:
             t = 0.16 if kind == "top" else 0.2
             mb.box((Q, D + 0.06, t), (cx, D / 2, 0), "Trim", 0)
@@ -566,7 +571,8 @@ def corner(mb, kit):
         mb.box((0.24, D + 0.08, 0.24), (0, D / 2, 0), "Trim", 0.03)
         mb.cyl(0.04, 0.03, (0, -0.06, 0), "Metal", segs=6)
     else:
-        mb.sphere(0.14, (0, 0.05, 0), "Trim", subdiv=1)
+        mb.box((0.26, D + 0.04, 0.26), (0, D / 2, 0), "Trim", 0.08)
+        mb.cyl(0.045, 0.04, (0, -0.04, 0), "Metal", segs=8)
 
 TILE_MASKS = [m for m in range(1, 16) if m not in (6, 9)]
 

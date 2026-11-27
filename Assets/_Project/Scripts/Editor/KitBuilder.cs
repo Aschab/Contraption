@@ -74,7 +74,21 @@ namespace Contraption.Editor
                     || kit.LiquidShader == null || kit.PaintedShader == null || kit.Pieces.Count != CountFor(kit.Prefix))) { BuildAll(); break; }
             }
             CheckOrientation();
+            CheckShaders();
         };
+
+        // Custom shaders silently fall back to Lit when they fail; log why.
+        public static void CheckShaders()
+        {
+            foreach (var guid in AssetDatabase.FindAssets("t:Shader", new[] { "Assets/_Project/Shaders" }))
+            {
+                var shader = AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(guid));
+                var messages = ShaderUtil.GetShaderMessages(shader);
+                if (shader.isSupported && messages.Length == 0) { Debug.Log($"Shader {shader.name}: OK"); continue; }
+                Debug.LogError($"Shader {shader.name}: supported={shader.isSupported} " +
+                    string.Join(" | ", messages.Select(m => $"{m.severity}: {m.message} (line {m.line})")));
+            }
+        }
 
         public static void CheckOrientation()
         {

@@ -10,6 +10,8 @@ namespace Contraption.Game
     public sealed class Look
     {
         public Color Body, Trim, Panel, Metal, Accent, Glow, Dark, Glass, Liquid;
+        // The machine's other glow colour (same as Glow when the scheme has one).
+        public Color Glow2;
 
         private readonly Dictionary<string, Material> _materials = new();
         private readonly Dictionary<(int, int), Look> _variants = new();
@@ -34,6 +36,7 @@ namespace Contraption.Game
                 l.Metal = Hex(colors.Metal, l.Metal);
                 if (colors.Glows.Count > 0) l.Glow = Hex(colors.Glows[0], l.Glow);
             }
+            l.Glow2 = colors != null && colors.Glows.Count > 1 ? Hex(colors.Glows[1], l.Glow) : l.Glow;
             return l;
         }
 
@@ -47,7 +50,9 @@ namespace Contraption.Game
             v._parent = this;
             v._variants.Clear();
             v.Panel = p.Tint == 1 ? Hex(_colors.PanelAlt, Panel) : p.Tint == 2 ? Hex(_colors.PanelAlt2, Panel) : Panel;
-            v.Glow = _colors.Glows.Count > 0 ? Hex(_colors.Glows[p.Glow % _colors.Glows.Count], Glow) : Glow;
+            int n = _colors.Glows.Count;
+            v.Glow = n > 0 ? Hex(_colors.Glows[p.Glow % n], Glow) : Glow;
+            v.Glow2 = n > 1 ? Hex(_colors.Glows[(p.Glow + 1) % n], Glow) : v.Glow;
             _variants[key] = v;
             return v;
         }

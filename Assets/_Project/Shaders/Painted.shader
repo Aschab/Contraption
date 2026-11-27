@@ -131,9 +131,9 @@ Shader "Contraption/Painted"
             ENDHLSL
         }
 
-        UsePass "Universal Render Pipeline/Lit/ShadowCaster"
-        UsePass "Universal Render Pipeline/Lit/DepthOnly"
-        UsePass "Universal Render Pipeline/Lit/DepthNormals"
+        UsePass "Universal Render Pipeline/Lit/SHADOWCASTER"
+        UsePass "Universal Render Pipeline/Lit/DEPTHONLY"
+        UsePass "Universal Render Pipeline/Lit/DEPTHNORMALS"
     }
     FallBack "Universal Render Pipeline/Lit"
 }
