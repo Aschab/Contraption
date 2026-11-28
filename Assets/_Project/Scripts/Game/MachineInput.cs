@@ -8,8 +8,9 @@ namespace Contraption.Game
     // Mouse is optional: everything is reachable with keyboard or gamepad. Navigate with one hand, manipulate with the other.
     // The test trigger is part of focus navigation; using or turning it runs a test.
     // Moving focus past the machine's left/right edge lifts the manual/logbook (atEdge).
-    // Keys: arrows move focus, W/D turn up, S/A turn down (joystick: W/A/S/D push), Space use, Z undo, R reset, T test, [ ] input, Tab port.
-    // Gamepad: d-pad/left stick focus, right stick turn/push, A use, X undo, Y reset, B test, LB/RB input, Select port.
+    // Keys: arrows move focus, W/D turn up, S/A turn down (joystick: W/A/S/D push), Space use, Z undo, R reset, T test, [ ] input, Tab port,
+    // F turn the machine around (when it has a rear view).
+    // Gamepad: d-pad/left stick focus, right stick turn/push, A use, X undo, Y reset, B test, LB/RB input, Select port, R3 turn around.
     // Mouse: hover focuses a control, click use (joystick: click a side, centre to centre), right click / scroll back; click the big plunger/lever to test.
     public sealed class MachineInput
     {
@@ -20,6 +21,11 @@ namespace Contraption.Game
         public void Tick(MachineSession s, MachineView v, Camera cam, bool keyboardFree, bool arrowsFree, Func<Vector2, bool> overGui, Action<int> atEdge)
         {
             if (v.Animating && AnyPress()) v.Skip();
+            if (v.HasBack && ((keyboardFree && (Keyboard.current?.fKey.wasPressedThisFrame ?? false))
+                              || (Gamepad.current?.rightStickButton.wasPressedThisFrame ?? false)))
+                v.Turn();
+            // Controls are out of reach while the machine shows its rear.
+            if (v.ShowingBack || v.Turning) return;
 
             var mouse = Mouse.current;
             if (mouse != null)

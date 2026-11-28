@@ -183,7 +183,7 @@ namespace Contraption.Game
 
         private void Header(PageDrawer d, float top)
         {
-            for (int t = 0; t < Liquid.PropertyCount; t++) d.Symbol(new Vector2(ColX(t), top - 0.03f), 0.026f, PageDrawer.TraitSymbols[t], PageDrawer.Ink);
+            for (int t = 0; t < Liquid.PropertyCount; t++) d.Icon(new Vector2(ColX(t), top - 0.03f), 0.036f, Plates.Trait((LiquidProperty)t), PageDrawer.Ink);
             float x0 = -PageW / 2f + 0.02f + Label, x1 = x0 + Col * Liquid.PropertyCount;
             d.Line(new Vector2(-PageW / 2f + 0.02f, top - 0.06f), new Vector2(x1, top - 0.06f), 0.0025f, PageDrawer.Ink);
             for (int t = 0; t <= Liquid.PropertyCount; t++) d.Line(new Vector2(x0 + Col * t, top), new Vector2(x0 + Col * t, -PageH / 2f + 0.03f), 0.0018f, PageDrawer.Ink);

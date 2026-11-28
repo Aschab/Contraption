@@ -40,7 +40,7 @@ namespace Contraption.Game
 
             GUILayout.EndScrollView();
             MachineView.AnimateTests = GUILayout.Toggle(MachineView.AnimateTests, "Animate tests (any key skips)");
-            GUILayout.Label("Arrows select (past the left/right edge: manual/logbook) · W/S (A/D) turn or push · Space use/centre\nZ undo · R reset · T test · Q manual · E logbook (pad: LT/RT)\nBook up: ←→ pages · ↑↓ entry · Del remove · Esc/B close");
+            GUILayout.Label("Arrows select (past the left/right edge: manual/logbook) · W/S (A/D) turn or push · Space use/centre\nZ undo · R reset · T test · Q manual · E logbook (pad: LT/RT) · F turn around (pad: R3)\nBook up: ←→ pages · ↑↓ entry · Del remove · Esc/B close");
             GUILayout.EndArea();
         }
 

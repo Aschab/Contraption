@@ -131,6 +131,8 @@ namespace Contraption.Core.Tests
         public void JsonRoundTrip()
         {
             var def = MachineGenerator.Generate(7, new GeneratorSettings()).Definition;
+            def.Hints = MachineHints.All(def.Pipeline.Count, MachineHints.LabelTrait);
+            def.Hints.Links[0] = false;
             string json = MachineJson.ToJson(def);
             Assert.AreEqual(json, MachineJson.ToJson(MachineJson.FromJson(json)));
         }

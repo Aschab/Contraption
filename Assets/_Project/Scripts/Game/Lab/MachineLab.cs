@@ -206,6 +206,9 @@ namespace Contraption.Game
             Frame();
         }
 
+        public bool HasBack => _view.HasBack;
+        public void TurnMachine() => _view.Turn();
+
         public void NewLayout()
         {
             var def = Session.Definition;

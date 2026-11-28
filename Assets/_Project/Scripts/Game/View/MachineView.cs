@@ -31,11 +31,18 @@ namespace Contraption.Game
         private int[] _testedInputs;
         private List<Liquid> _stages;
         private Coroutine _play;
+        private MachineBack _back;
+        private Vector3 _pivot;
+        private float _turn;
 
         public int Focus { get; private set; }
         public int ControlCount => _controls.Count;
         public Bounds Bounds { get; private set; }
         public bool Animating => _play != null;
+        public bool HasBack => _back != null;
+        // Turned around to show the rear (cables between the displays in step order). Survives rebuilds.
+        public bool ShowingBack { get; private set; }
+        public bool Turning => !Mathf.Approximately(_turn, ShowingBack ? 1f : 0f);
 
         public bool IsTestTrigger(Collider c) => c != null && _trigger != null && c.GetComponentInParent<TestTriggerView>() == _trigger;
 
@@ -55,6 +62,7 @@ namespace Contraption.Game
             _vials.Clear();
             _testedInputs = null;
 
+            if (session != _session) ShowingBack = false;
             _session = session;
             _kit = kit;
             var def = session.Definition;
@@ -92,12 +100,88 @@ namespace Contraption.Game
             }
             BuildTops(rng, freeTops);
             BuildOutput(def);
+            BuildPlates(def);
+            _back = def.Hints != null && def.Hints.Back ? BuildBack(def) : null;
 
             UpdateBounds();
+            // Turn around the middle of the machine so it stays framed: the rear face lands where the front was.
+            _pivot = new Vector3(transform.InverseTransformPoint(Bounds.center).x, 0f, Depth / 2f);
+            if (_back == null) ShowingBack = false;
+            _turn = ShowingBack ? 1f : 0f;
+            ApplyTurn();
             Focus = 0;
             _session.Changed += Refresh;
             _session.Tested += OnTested;
             Refresh(true);
+        }
+
+        // ---------------------------------------------------------------- hints: label plates and the rear
+        private float ExitY => _baseH + (_layout.TopOf(_layout.Columns - 1) + 0.5f) * Cell;
+
+        // A plate bolted across the bottom edge of each display that hosts labelled steps; Exchange steps label the output pipe.
+        private void BuildPlates(MachineDefinition def)
+        {
+            if (def.Hints == null) return;
+            var rows = new List<List<Plates.Mark>>[def.Displays.Count + 1];
+            for (int s = 0; s < def.Pipeline.Count; s++)
+            {
+                int home = MachineHints.Home(def, s);
+                var marks = Plates.Sentence(def, s, def.Hints.Label(s), home);
+                if (marks.Count == 0) continue;
+                int slot = home < 0 ? def.Displays.Count : home;
+                (rows[slot] ??= new List<List<Plates.Mark>>()).Add(marks);
+            }
+            for (int i = 0; i < def.Displays.Count; i++)
+            {
+                if (rows[i] == null) continue;
+                var p = _layout.Displays[i];
+                var c = Center(p);
+                float front = def.Displays[i].Kind == DisplayKind.Light ? 0.31f : 0.2f;
+                Plates.Build(_root, new Vector3(c.x, c.y - p.H * Cell / 2f + 0.1f, c.z - front), rows[i], p.W * Cell - 0.1f, _look, false);
+            }
+            if (rows[def.Displays.Count] != null)
+                Plates.Build(_root, new Vector3(RightEdge + 0.35f, ExitY + 0.28f, PipeZ - 0.12f), rows[def.Displays.Count], 1.2f, _look, false);
+        }
+
+        private MachineBack BuildBack(MachineDefinition def)
+        {
+            var nodes = new MachineBack.Node[def.Displays.Count];
+            var frames = new string[nodes.Length];
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                var p = _layout.Displays[i];
+                var c = Center(p);
+                nodes[i] = new MachineBack.Node { Center = new Vector2(c.x, c.y), Size = new Vector2(p.W * Cell, p.H * Cell) * 0.9f };
+                frames[i] = "Bezel" + Size(p);
+            }
+            var free = new List<Vector2>();
+            for (int y = 0; y < _layout.Rows; y++)
+                for (int x = 0; x < _layout.Columns; x++)
+                    if (_layout.IsBody(x, y) && !_layout.Displays.Exists(d => d != null && d.Overlaps(x, y, 1, 1)))
+                        free.Add(new Vector2(ColumnX(x), _baseH + (y + 0.5f) * Cell));
+            int inCol = _layout.Inputs.Count > 0 ? _layout.Inputs[0].Column : 0;
+            var start = new Vector2(ColumnX(inCol), TopY(inCol) + 0.12f);
+            var end = new Vector2(RightEdge + 0.2f, ExitY);
+            return MachineBack.Create(_kit, _look, _root, def, def.Hints, nodes, frames, free, start, end, Depth);
+        }
+
+        public void Turn()
+        {
+            if (_back != null) ShowingBack = !ShowingBack;
+        }
+
+        private void Update()
+        {
+            if (_root == null || !Turning) return;
+            _turn = Mathf.MoveTowards(_turn, ShowingBack ? 1f : 0f, Time.deltaTime / 0.9f);
+            ApplyTurn();
+        }
+
+        private void ApplyTurn()
+        {
+            var rot = Quaternion.Euler(0f, 180f * Mathf.SmoothStep(0f, 1f, _turn), 0f);
+            _root.localRotation = rot;
+            _root.localPosition = _pivot - rot * _pivot;
         }
 
         // ---------------------------------------------------------------- geometry

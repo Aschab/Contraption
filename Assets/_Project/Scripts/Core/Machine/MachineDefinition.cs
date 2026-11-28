@@ -22,6 +22,8 @@ namespace Contraption.Core
         public int[] ReferenceSolution = new int[0];
         // Visual arrangement; null for levels saved before layouts existed (the lab generates one).
         public MachineLayout Layout;
+        // Learning-curve hints (labels, rear cables); null = none.
+        public MachineHints Hints;
 
         public int SlotCount() => Registers.Count + Controls.Count;
         public int ControlSlot(int controlIndex) => Registers.Count + controlIndex;

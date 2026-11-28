@@ -40,20 +40,22 @@ namespace Contraption.Core
             }
 
             sb.AppendLine("Pipeline:");
-            foreach (var op in def.Pipeline)
-            {
-                string src = op.Kind is OpKind.Siphon or OpKind.Swap or OpKind.Exchange ? $" ⇄ {op.Source}" : "";
-                string th = op.Kind switch
-                {
-                    OpKind.Exchange => " (always)",
-                    OpKind.Purge or OpKind.Swap => $" (R{op.Register}≥{op.Threshold})",
-                    _ => $" by R{op.Register}",
-                };
-                sb.AppendLine($"   {op.Kind} {op.Target}{src}{th}");
-            }
+            foreach (var op in def.Pipeline) sb.AppendLine("   " + Step(op));
 
             sb.AppendLine($"Reference solution: [{string.Join(",", def.ReferenceSolution)}]");
             return sb.ToString();
+        }
+
+        public static string Step(TransferOp op)
+        {
+            string src = op.Kind is OpKind.Siphon or OpKind.Swap or OpKind.Exchange ? $" ⇄ {op.Source}" : "";
+            string th = op.Kind switch
+            {
+                OpKind.Exchange => " (always)",
+                OpKind.Purge or OpKind.Swap => $" (R{op.Register}≥{op.Threshold})",
+                _ => $" by R{op.Register}",
+            };
+            return $"{op.Kind} {op.Target}{src}{th}";
         }
 
         public static string ControlName(MachineDefinition def, int c) => $"{def.Controls[c].Kind} {c}";

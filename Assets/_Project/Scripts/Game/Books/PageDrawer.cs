@@ -11,9 +11,6 @@ namespace Contraption.Game
         public static readonly Color Mismatch = new(0.96f, 0.64f, 0.18f);
         public static readonly Color Seal = new(0.62f, 0.1f, 0.08f);
 
-        // Alien symbol for each liquid trait (Color, Viscosity, Temperature, Flammability, Refraction); the same in every machine.
-        public static readonly int[] TraitSymbols = Glyphs.MakeRunes(0x7A175EEDUL, Liquid.PropertyCount, 3, 5);
-
         private readonly Transform _root;
         public Color Paper { get; }
 
@@ -56,6 +53,10 @@ namespace Contraption.Game
             go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             Art.Paint(go.GetComponent<Renderer>(), color, Color.black, 0.1f);
         }
+
+        // A label symbol (Resources/Labels), e.g. a trait; the same art as the machine's plates.
+        public void Icon(Vector2 c, float size, string name, Color color, int layer = 1) =>
+            Plates.Icon(_root, new Vector3(c.x, c.y, -0.0008f * layer), size, name, color);
 
         // A value 0-4 as a 2x2 grid: boxes fill top-left, top-right, bottom-left, bottom-right.
         public void Grid(Vector2 c, float size, int value, Color fill)

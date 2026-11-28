@@ -11,7 +11,7 @@ namespace Contraption.Game
     {
         public const float Width = 400f;
         private Vector2 _scroll;
-        private bool _showSettings = true, _showRules, _showLevels, _showLayout = true;
+        private bool _showSettings = true, _showRules, _showLevels, _showLayout = true, _showHints = true;
         private string _solutionText = "";
 
         public void Draw(Rect area, MachineLab lab)
@@ -50,6 +50,7 @@ namespace Contraption.Game
             if (_showSettings) DrawSettings(lab.Settings);
 
             if (lab.Session != null) DrawLayout(lab);
+            if (lab.Session != null) DrawHints(lab);
 
             GUILayout.Space(6);
             GUILayout.Label("<b>RESULT</b>", Rich());
@@ -170,6 +171,51 @@ namespace Contraption.Game
             if (GUILayout.Button("→", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, 1, 0), "Moved");
             GUILayout.EndHorizontal();
             if (Cycle("Depth", DepthNames[p.Depth], DepthNames, out var depth)) { p.Depth = Array.IndexOf(DepthNames, depth); lab.RebuildView(); }
+        }
+
+        private static readonly string[] LabelNames = { "None", "Trait", "Full" };
+
+        // Per step: the cable into it, its label level, and where it lives (display or the pipe for Exchange).
+        private void DrawHints(MachineLab lab)
+        {
+            var def = lab.Session.Definition;
+            int n = def.Pipeline.Count;
+            GUILayout.Space(6);
+            _showHints = GUILayout.Toggle(_showHints, "<b>HINTS</b>  (labels and rear cables, saved with the level)", Rich(GUI.skin.toggle));
+            if (!_showHints) return;
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("All")) { def.Hints = MachineHints.All(n); lab.RebuildView(); }
+            if (GUILayout.Button("Traits + cables")) { def.Hints = MachineHints.All(n, MachineHints.LabelTrait); lab.RebuildView(); }
+            if (GUILayout.Button("None")) { def.Hints = null; lab.RebuildView(); }
+            GUILayout.EndHorizontal();
+            var h = def.Hints;
+            if (h == null) return;
+            h.Fit(n);
+
+            bool changed = false;
+            GUILayout.BeginHorizontal();
+            bool back = GUILayout.Toggle(h.Back, "Rear view");
+            if (back != h.Back) { h.Back = back; changed = true; }
+            if (lab.HasBack && GUILayout.Button("Turn around (F)", GUILayout.Width(130))) lab.TurnMachine();
+            GUILayout.EndHorizontal();
+            GUILayout.Label("cable in · step · home · label");
+            for (int s = 0; s <= n; s++)
+            {
+                GUILayout.BeginHorizontal();
+                bool link = GUILayout.Toggle(h.Links[s], "", GUILayout.Width(18));
+                if (link != h.Links[s]) { h.Links[s] = link; changed = true; }
+                if (s == n)
+                {
+                    GUILayout.Label("→ end");
+                    GUILayout.EndHorizontal();
+                    break;
+                }
+                int home = MachineHints.Home(def, s);
+                GUILayout.Label($"{s + 1}. {MachineDescriber.Step(def.Pipeline[s])} · {(home < 0 ? "pipe" : "D" + (home + 1))}", GUILayout.Width(250));
+                if (GUILayout.Button(LabelNames[h.Labels[s]], GUILayout.Width(50))) { h.Labels[s] = (h.Labels[s] + 1) % LabelNames.Length; changed = true; }
+                GUILayout.EndHorizontal();
+            }
+            if (changed) lab.RebuildView();
         }
 
         private static readonly string[] DepthNames = { "Flush", "Raised", "Framed" };
