@@ -42,7 +42,7 @@ namespace Contraption.Game
         private string _result;
         private bool _seal;
         private string _triggerSound = "test_plunger";
-        private AudioSource _drain, _pour, _idle;
+        private AudioSource _idle;
         private Vector3 _pivot;
         private float _turn;
 
@@ -118,8 +118,6 @@ namespace Contraption.Game
             BuildTops(rng, freeTops);
             BuildOutput(def);
             BuildPlates(def);
-            if (_inputs.Count > 0) _drain = Sfx.Loop("liquid_drain", _root, _inputs[0].transform.localPosition, 0.7f);
-            _pour = Sfx.Loop("liquid_pour", _root, _output.transform.localPosition, 0.7f);
             _idle = Sfx.Loop("machine_idle", _root, new Vector3(0f, _baseH + _layout.Rows * Cell / 2f, 0f), 0.35f, SoundChannel.Ambience);
             if (_idle != null) { _idle.time = Random.Range(0f, _idle.clip.length); _idle.Play(); }
             _back = def.Hints != null && def.Hints.Back ? BuildBack(def) : null;
@@ -361,7 +359,6 @@ namespace Contraption.Game
                     float y = col % 2 == 0 ? top - row * VialStep : top - (perCol - 1 - row) * VialStep;
                     var pos = new Vector3(x + col * 0.7f, y, VialZ);
                     var vial = LiquidContainerView.Create(_kit, _look, _root, "Vial", pos);
-                    vial.Audible = false;
                     _vials.Add(vial);
                     Route(prev, new Vector3(pos.x, pos.y, PipeZ));
                     prev = new Vector3(pos.x, pos.y, PipeZ);
@@ -581,10 +578,7 @@ namespace Contraption.Game
             foreach (var l in inputs) vis += l.Viscosity;
             float drain = Mathf.Lerp(0.45f, 0.9f, vis / (float)(Values.Max * inputs.Count));
             foreach (var c in _inputs) c.SetFill(0f, drain);
-            if (_drain != null) { _drain.pitch = Mathf.Lerp(1.15f, 0.8f, vis / (float)(Values.Max * inputs.Count)); _drain.Play(); }
-            Sfx.Play("liquid_gurgle", transform.position, 0.7f);
             yield return new WaitForSeconds(drain);
-            if (_drain != null) _drain.Stop();
 
             for (int i = 0; i < _vials.Count; i++)
             {
@@ -599,15 +593,12 @@ namespace Contraption.Game
             float fill = Mathf.Lerp(0.5f, 0.9f, output.Viscosity / (float)Values.Max);
             _output.SetFill(1f, fill);
             ShowStream(output);
-            Sfx.Play("liquid_splash", _output.transform.position, 0.8f);
-            if (_pour != null) _pour.Play();
             for (float t = 0f; t < fill; t += Time.deltaTime)
             {
                 PlaceStream(output);
                 yield return null;
             }
             _stream.gameObject.SetActive(false);
-            if (_pour != null) _pour.Stop();
             _play = null;
             PlayResult();
         }
@@ -646,8 +637,6 @@ namespace Contraption.Game
 
         private void Finish()
         {
-            if (_drain != null) _drain.Stop();
-            if (_pour != null) _pour.Stop();
             PlayResult();
             foreach (var c in _inputs) c.SetFill(0f, 0f);
             for (int i = 0; i < _vials.Count; i++)

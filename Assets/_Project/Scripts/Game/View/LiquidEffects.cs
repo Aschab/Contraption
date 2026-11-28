@@ -20,9 +20,6 @@ namespace Contraption.Game
 
         // World Y of the liquid surface, set by the container every frame.
         public float LightScale { get; set; } = 1f;
-        public bool Audible { get; set; } = true;
-        private AudioSource _heatLoop, _flameLoop;
-        private float _nextCrackle;
         public float Level { get; set; }
         public Bounds Bounds { get; set; }
 
@@ -94,9 +91,6 @@ namespace Contraption.Game
             Toggle(_flames, on && l.Flammability >= 3);
             Toggle(_glints, on && l.Refraction >= 4);
             foreach (var c in _ice) c.gameObject.SetActive(on && l.Temperature == 0);
-            string heat = !on || !Audible ? null : l.Temperature <= 1 ? "liquid_cold" : l.Temperature == 3 ? "liquid_steam" : l.Temperature >= 4 ? "liquid_boil" : null;
-            SetLoop(ref _heatLoop, heat, 0.35f);
-            SetLoop(ref _flameLoop, on && Audible && l.Flammability >= 3 ? "liquid_flame" : null, l.Flammability >= 4 ? 0.55f : 0.35f);
             _light.enabled = on && l.Refraction >= 3;
             if (on)
             {
@@ -108,27 +102,10 @@ namespace Contraption.Game
             }
         }
 
-        // Swaps a trait loop's clip only when the trait band changes (Show runs every frame while filling).
-        private void SetLoop(ref AudioSource src, string name, float volume)
-        {
-            if (name == null) { if (src != null && src.isPlaying) src.Stop(); return; }
-            if (src != null && src.isPlaying && src.clip != null && src.clip.name == name) return;
-            if (src != null) Destroy(src.gameObject);
-            src = Sfx.Loop(name, transform, Vector3.zero, volume);
-            if (src == null) return;
-            src.time = Random.Range(0f, src.clip.length);
-            src.Play();
-        }
-
         private void Update()
         {
             if (!_value.HasValue) return;
             var l = _value.Value;
-            if (Audible && (l.Flammability == 2 || l.Refraction >= 4) && Time.time > _nextCrackle)
-            {
-                _nextCrackle = Time.time + Random.Range(0.6f, 1.8f);
-                Sfx.Play(l.Flammability == 2 ? "liquid_sparks" : "liquid_glint", new Vector3(Bounds.center.x, Level, Bounds.center.z), 0.5f);
-            }
             var b = Bounds;
             float level = Level;
             var top = new Vector3(b.center.x, level, b.center.z);

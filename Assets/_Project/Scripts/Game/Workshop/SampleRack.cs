@@ -56,7 +56,6 @@ namespace Contraption.Game
                     var pos = _root.InverseTransformPoint(slot.position);
                     var tube = LiquidContainerView.Create(_kit, look, _root, "Sample_Tube", pos);
                     tube.Brightness = 0.35f;   // dimmer than the machine's tanks so the tags stay readable
-                    tube.Audible = false;
                     tube.Show(pool[i]);
                     tube.SetFill(1f, 0f);
                     DrawTag(tube.transform, look.Panel, i);

@@ -162,9 +162,7 @@ ONE = {
     "test_lever": (lambda r: seq([(0, ratchet(r, 5, J(r, 1400), 250, 0.035), 1), (0.18, clunk(r, J(r, 130), 0.45, 0.14), 1), (0.3, click(r, 2600, body=900), 0.4)]), 0.9),
     "machine_start": (lambda r: seq([(0, shape(tone(1.0, J(r, 45), J(r, 120), kind="saw"), [(0, 0), (0.3, 0.8), (0.8, 0.6), (1, 0)]), 0.5),
                                     (0, crackle(r, 1.0, 14, 1800), 0.4), (0, clunk(r, J(r, 120)), 0.6)]), 0.75),
-    "liquid_gurgle": (lambda r: seq([(0, bubbles(r, 0.5, 10, 150, 420, 0.03, 0.09), 1), (0, shape(lowpass(noise(0.5, r), 400), [(0, 0), (0.3, 1), (1, 0)]), 0.3)]), 0.7),
     "vial_fill": (lambda r: seq([(0, bubbles(r, 0.25, 8, 500, 1100, 0.02, 0.05), 1), (0.25, glass(r, J(r, 2800), 0.3), 0.35)]), 0.6),
-    "liquid_splash": (lambda r: seq([(0, env(lowpass(noise(0.3, r), 2200), 0.002, 0.08), 1), (0.02, bubbles(r, 0.3, 6, 300, 800), 0.8)]), 0.75),
     "test_skip": (lambda r: whoosh(r, 0.14, J(r, 700), 4000, 1.4), 0.5),
     # result
     "result_match": (lambda r: seq([(0, bell(r, [523.3, 587.3, 659.3][r.randrange(3)]), 0.8), (0.13, bell(r, 784.0 * r.choice([1, 1.0595])), 1)]), 0.7),
@@ -182,9 +180,6 @@ ONE = {
     "disp_gauge_move": (lambda r: seq([(0, env(bandpass(noise(0.15, r), J(r, 2200), 3), 0.01, 0.05), 0.5)] + [(i * 0.035, click(r, J(r, 3500), decay=0.002), 0.5) for i in range(3)]), 0.4),
     "disp_glyph_change": (lambda r: seq([(0, env(tone(0.05, J(r, 1250), kind="square"), 0.002, 0.03), 0.35), (0.06, env(tone(0.05, J(r, 1870), kind="square"), 0.002, 0.03), 0.35)]), 0.35),
     "disp_script_type": (lambda r: seq([(0, click(r, J(r, 3800), body=J(r, 650), ring=0.012), 1)]), 0.4),
-    # liquid traits (one-shots sprinkled while a trait shows)
-    "liquid_sparks": (lambda r: crackle(r, 0.18, r.randrange(5, 10), 4000), 0.4),
-    "liquid_glint": (lambda r: seq([(i * 0.06, env(tone(0.3, r.uniform(4200, 7200)), 0.002, 0.08), 0.4) for i in range(3)]), 0.3),
     # navigation
     "focus_move": (lambda r: seq([(0, env(tone(0.03, J(r, 1900)), 0.001, 0.008), 0.6), (0, click(r, 5000, decay=0.001), 0.2)]), 0.22),
     "magnify_in": (lambda r: whoosh(r, 0.2, J(r, 400), 1800, 1.5), 0.3),
@@ -225,17 +220,7 @@ def hum(rng, sec):
         for i in range(len(x)): x[i] += a * math.sin(TAU * 55 * k * i / SR)
     return mix(x, crackle(rng, sec, int(sec * 6), 5000), 0, 0.5)
 
-def lfo(x, rate, depth, rng):
-    p = rng.uniform(0, TAU)
-    return [v * (1 - depth + depth * (0.5 + 0.5 * math.sin(p + TAU * rate * i / SR))) for i, v in enumerate(x)]
-
 LOOPS = {
-    "liquid_drain": (lambda r, s: mix(bubbles(r, s, int(s * 14), 120, 380, 0.04, 0.11), lfo(lowpass(noise(s, r), 500), 0.7, 0.5, r), 0, 0.5), 3.0, 0.6),
-    "liquid_pour": (lambda r, s: mix(lfo(bandpass(noise(s, r), 1400, 0.8), 3.0, 0.3, r), bubbles(r, s, int(s * 30), 400, 1300, 0.015, 0.05), 0, 0.6), 3.0, 0.6),
-    "liquid_boil": (lambda r, s: mix(bubbles(r, s, int(s * 40), 90, 260, 0.04, 0.12, 0.7), lowpass(noise(s, r), 150), 0, 0.6), 3.0, 0.55),
-    "liquid_steam": (lambda r, s: lfo(highpass(noise(s, r), 3500), 0.4, 0.5, r), 3.0, 0.3),
-    "liquid_cold": (lambda r, s: mix(crackle(r, s, int(s * 5), 6000), [sum(math.sin(TAU * f * i / SR) for f in (3520, 4186, 5274)) * 0.05 for i in range(N(s))], 0, 1.0), 4.0, 0.25),
-    "liquid_flame": (lambda r, s: mix(lfo(lowpass(noise(s, r), 350), 1.3, 0.4, r), crackle(r, s, int(s * 12), 2500), 0, 0.5), 3.0, 0.5),
     "cable_travel": (lambda r, s: hum(r, s), 2.0, 0.35),
 }
 

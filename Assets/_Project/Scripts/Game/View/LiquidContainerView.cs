@@ -21,8 +21,6 @@ namespace Contraption.Game
 
         // Scales glow, colour and effect lights (sample tubes are dimmed).
         public float Brightness = 1f;
-        // Trait sounds (boiling, flames…); off for small or decorative containers.
-        public bool Audible = true;
         public Transform Inlet { get; private set; }
         public Transform Outlet { get; private set; }
         public float Fill => _fill;
@@ -99,7 +97,6 @@ namespace Contraption.Game
             bool visible = _value.HasValue && _fill > 0.001f;
             _liquid.enabled = visible;
             _fx.LightScale = Brightness;
-            _fx.Audible = Audible;
             _fx.Show(_value, _fill);
             if (!visible) return;
             var l = _value.Value;

@@ -57,7 +57,7 @@ Focus (arrows / d-pad / mouse hover) reaches controls, the test trigger and disp
 - Tests animate (~1.5 s) and can be skipped with any input or turned off.
 
 ## Audio
-- Every player action has its own sound: each control kind (lever up ≠ down, dial wrap ≠ click, refused move), the test run (trigger, drain, vials, splash, pour), the result (match / mismatch / untested inputs / seal / machine fixed), display changes, focus/magnify, turning, the rear light, tubes, books, undo/reset, intro.
-- One-shots have 3 variations; playback picks a random one (never the same twice running) with a slight pitch wobble; each control has its own pitch. Liquids sound their traits (cold, steam, boil, flames, sparks, glints) while visible.
+- Every player action has its own sound: each control kind (lever up ≠ down, dial wrap ≠ click, refused move), the test run (trigger, machine start, vials), the result (match / mismatch / untested inputs / seal / machine fixed), display changes, focus/magnify, turning, the rear light, tubes, books, undo/reset, intro.
+- One-shots have 3 variations; playback picks a random one (never the same twice running) with a slight pitch wobble; each control has its own pitch.
 - Effects are synthesised by `ArtSource/Audio/synth_sfx.py` into `Resources/Audio/Sfx`; ambience loops (workshop room tone, machine idle, lamps) come from Suno.
 
