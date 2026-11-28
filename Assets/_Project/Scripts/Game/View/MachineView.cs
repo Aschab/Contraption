@@ -47,6 +47,9 @@ namespace Contraption.Game
         private float _turn;
 
         public int Focus { get; private set; }
+        // Something is selected (highlighted, magnified). Released by Esc / B or moving the mouse off the machine;
+        // Focus keeps the last part so the next arrow press picks up there.
+        public bool Engaged { get; private set; }
         public int ControlCount => _controls.Count;
         public Bounds Bounds { get; private set; }
         public bool Animating => _play != null;
@@ -129,6 +132,7 @@ namespace Contraption.Game
             _turn = ShowingBack ? 1f : 0f;
             ApplyTurn();
             Focus = 0;
+            Engaged = false;
             _lastFocus = -1;
             _result = null;
             _session.Changed += Refresh;
@@ -139,18 +143,27 @@ namespace Contraption.Game
         // ---------------------------------------------------------------- hints: label plates and the rear
         private float ExitY => _baseH + (_layout.TopOf(_layout.Columns - 1) + 0.5f) * Cell;
 
-        // Labels go into each home display's label slot; Exchange steps get a plate on the output pipe.
+        // Labels go into the displays' label slots; Exchange steps get a plate on the output pipe.
         private void BuildPlates(MachineDefinition def)
         {
             if (def.Hints == null) return;
             var rows = new List<List<Plates.Mark>>[def.Displays.Count + 1];
+            // Every display that shows a step's register carries that step's label (not just its home display).
             for (int s = 0; s < def.Pipeline.Count; s++)
             {
-                int home = MachineHints.Home(def, s);
-                var marks = Plates.Sentence(def, s, def.Hints.Label(s), home);
-                if (marks.Count == 0) continue;
-                int slot = home < 0 ? def.Displays.Count : home;
-                (rows[slot] ??= new List<List<Plates.Mark>>()).Add(marks);
+                var op = def.Pipeline[s];
+                if (op.Kind == OpKind.Exchange)
+                {
+                    var marks = Plates.Sentence(def, s, def.Hints.Label(s), -1);
+                    if (marks.Count > 0) (rows[def.Displays.Count] ??= new List<List<Plates.Mark>>()).Add(marks);
+                    continue;
+                }
+                for (int d = 0; d < def.Displays.Count; d++)
+                {
+                    if (MachineHints.Weight(def.Displays[d], op.Register) == 0) continue;
+                    var marks = Plates.Sentence(def, s, def.Hints.Label(s), d);
+                    if (marks.Count > 0) (rows[d] ??= new List<List<Plates.Mark>>()).Add(marks);
+                }
             }
             for (int i = 0; i < def.Displays.Count; i++) _displays[i].SetLabel(rows[i]);
             if (rows[def.Displays.Count] != null)
@@ -227,7 +240,7 @@ namespace Contraption.Game
         }
 
         // Index into _parts of the focused control or display; -1 for the test trigger.
-        private int FocusedPart => Focus < _controls.Count ? Focus : Focus > _controls.Count ? Focus - 1 : -1;
+        private int FocusedPart => !Engaged ? -1 : Focus < _controls.Count ? Focus : Focus > _controls.Count ? Focus - 1 : -1;
 
         private void ApplyTurn()
         {
@@ -450,16 +463,31 @@ namespace Contraption.Game
 
         public void SetFocus(int index)
         {
+            bool was = Engaged;
             Focus = Values.Wrap(index, FocusCount);
-            for (int i = 0; i < _controls.Count; i++) _controls[i].SetFocused(i == Focus);
-            _trigger.SetFocused(TriggerFocused);
-            for (int i = 0; i < _displays.Count; i++) _displays[i].SetFocused(Focus == _controls.Count + 1 + i);
-            if (_lastFocus >= 0 && _lastFocus != Focus)
+            Engaged = true;
+            ApplyFocus();
+            if (_lastFocus >= 0 && (_lastFocus != Focus || !was))
             {
                 bool magnifies = Accessibility.MagnifyFocus && !TriggerFocused && !ShowingBack;
                 Sfx.Play(magnifies ? "magnify_in" : "focus_move", FocusWorld, magnifies ? 0.8f : 1f);
             }
             _lastFocus = Focus;
+        }
+
+        public void Release()
+        {
+            if (!Engaged) return;
+            Engaged = false;
+            ApplyFocus();
+            if (Accessibility.MagnifyFocus && !ShowingBack) Sfx.Play("magnify_out", FocusWorld, 0.7f);
+        }
+
+        private void ApplyFocus()
+        {
+            for (int i = 0; i < _controls.Count; i++) _controls[i].SetFocused(Engaged && i == Focus);
+            _trigger.SetFocused(Engaged && TriggerFocused);
+            for (int i = 0; i < _displays.Count; i++) _displays[i].SetFocused(Engaged && Focus == _controls.Count + 1 + i);
         }
 
         private Vector3 FocusWorld => Focus < _controls.Count ? _controls[Focus].transform.position
@@ -491,6 +519,8 @@ namespace Contraption.Game
         // Spatial navigation: the nearest control roughly in the pressed direction; false at the machine's edge.
         public bool MoveFocus(Vector2 dir)
         {
+            // With nothing selected, the first press just selects the last part again.
+            if (!Engaged) { SetFocus(Focus); return true; }
             var from = FocusPosition(Focus);
             int best = -1;
             float bestScore = float.MaxValue;
@@ -539,7 +569,7 @@ namespace Contraption.Game
             // A fixed machine idles calmer.
             if (_idle != null) { Sfx.SetVolume(_idle, solved ? 0.3f : 0.7f); _idle.pitch = solved ? 0.92f : 1f; }
             if (_fixedLamp != null) Art.Paint(_fixedLamp, solved ? Color.green : _look.Dark * 1.6f, solved ? Color.green * 3f : Color.black, 0.9f);
-            SetFocus(Focus);
+            ApplyFocus();
         }
 
         private bool SameInputs()

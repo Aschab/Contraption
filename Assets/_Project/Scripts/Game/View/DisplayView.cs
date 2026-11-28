@@ -19,6 +19,9 @@ namespace Contraption.Game
         private Placement _placement;
         private Transform _label;
         private GameObject _focusFrame;
+        private readonly List<Renderer> _labelIcons = new();
+        private bool _focused;
+        private float _glow;
         private DisplayDef _def;
         private Look _look;
         private GlyphSet _glyphs;
@@ -111,7 +114,22 @@ namespace Contraption.Game
             Sfx.Play(name, transform.position, 0.8f);
         }
 
-        public void SetFocused(bool focused) => _focusFrame.SetActive(focused);
+        public void SetFocused(bool focused)
+        {
+            _focused = focused;
+            _focusFrame.SetActive(focused);
+        }
+
+        // While selected, the label's symbols light up in the glow colour and breathe gently.
+        private void GlowLabel()
+        {
+            float target = _focused ? 1f : 0f;
+            if (_labelIcons.Count == 0 || (_glow == 0f && target == 0f)) return;
+            _glow = Mathf.MoveTowards(_glow, target, Time.deltaTime * 4f);
+            float pulse = _glow * (0.6f + 0.4f * Mathf.Sin(Time.time * 4f));
+            var color = Color.Lerp(_look.Panel, _look.Glow, _glow * 0.7f);
+            foreach (var r in _labelIcons) Art.Paint(r, color, _look.Glow * (1.4f * pulse));
+        }
 
         private static GameObject FocusFrame(Transform parent, float w, float h, Color glow)
         {
@@ -134,7 +152,7 @@ namespace Contraption.Game
             if (_label == null || rows == null || rows.Count == 0) return;
             var c = transform.InverseTransformPoint(_label.position) + new Vector3(0f, 0f, -0.003f);
             float width = _placement.W * MachineView.Cell - 0.14f - 0.2f;
-            Plates.Fill(transform, c, width, LabelSlot, rows, _look.Panel, _look);
+            Plates.Fill(transform, c, width, LabelSlot, rows, _look.Panel, _look, _labelIcons);
         }
 
         private static Renderer[] Children(Transform body, string prefix, int count)
@@ -188,6 +206,7 @@ namespace Contraption.Game
         private void Update()
         {
             if (_cursor != null) _cursor.enabled = Time.time % 1f < 0.55f;
+            GlowLabel();
             if (_needle == null) return;
             // Continuous needle with a little analog jitter.
             _needleAngle = Mathf.Lerp(_needleAngle, _needleTarget, 1f - Mathf.Exp(-8f * Time.deltaTime));

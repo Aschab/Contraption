@@ -89,7 +89,7 @@ namespace Contraption.Game
         }
 
         // Symbols without a plate, laid into a slot of the given size: sentences side by side if that's bigger, else stacked.
-        public static void Fill(Transform parent, Vector3 center, float width, float height, List<List<Mark>> rows, Color color, Look look)
+        public static void Fill(Transform parent, Vector3 center, float width, float height, List<List<Mark>> rows, Color color, Look look, List<Renderer> icons = null)
         {
             const float gap = 0.15f, split = 0.6f;   // in icon widths
             int total = 0, longest = 0;
@@ -102,7 +102,7 @@ namespace Contraption.Game
                 float x = center.x - line * lineUnits / 2f + line / 2f;
                 foreach (var r in rows)
                 {
-                    foreach (var m in r) { Draw(parent, new Vector3(x, center.y, center.z), line, m, color, look); x += line * (1f + gap); }
+                    foreach (var m in r) { Draw(parent, new Vector3(x, center.y, center.z), line, m, color, look, icons); x += line * (1f + gap); }
                     x += line * (split - gap);
                 }
                 return;
@@ -112,14 +112,14 @@ namespace Contraption.Game
                 var r = rows[i];
                 float y = center.y + (rows.Count / 2f - i - 0.5f) * stacked * 1.1f;
                 float x = center.x - stacked * (r.Count + gap * (r.Count - 1)) / 2f + stacked / 2f;
-                foreach (var m in r) { Draw(parent, new Vector3(x, y, center.z), stacked, m, color, look); x += stacked * (1f + gap); }
+                foreach (var m in r) { Draw(parent, new Vector3(x, y, center.z), stacked, m, color, look, icons); x += stacked * (1f + gap); }
             }
         }
 
-        private static void Draw(Transform parent, Vector3 c, float size, Mark m, Color color, Look look)
+        private static void Draw(Transform parent, Vector3 c, float size, Mark m, Color color, Look look, List<Renderer> icons)
         {
             if (m.Grid >= 0) ValueGrid(parent, c, size * 0.8f, m.Grid, look);
-            else Icon(parent, c, size, m.Icon, color);
+            else icons?.Add(Icon(parent, c, size, m.Icon, color).GetComponent<Renderer>());
         }
 
         public static GameObject Icon(Transform parent, Vector3 pos, float size, string name, Color color, Color emission = default)

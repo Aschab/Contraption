@@ -88,12 +88,8 @@ namespace Contraption.Game
                 GUILayout.EndHorizontal();
             }
 
-            _showSounds = GUILayout.Toggle(_showSounds, "Now playing (loops)");
-            if (_showSounds)
-            {
-                var playing = Sfx.Playing();
-                GUILayout.Label(playing.Count == 0 ? "—" : string.Join("\n", playing));
-            }
+            _showSounds = GUILayout.Toggle(_showSounds, "<b>SOUND REVIEW</b>  (marks → ArtSource/Audio/packs/review.txt)", Rich(GUI.skin.toggle));
+            if (_showSounds) DrawSoundReview(lab);
 
             _showLevels = GUILayout.Toggle(_showLevels, "Saved levels");
             if (_showLevels)
@@ -178,6 +174,43 @@ namespace Contraption.Game
             if (GUILayout.Button("→", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, 1, 0), "Moved");
             GUILayout.EndHorizontal();
             if (Cycle("Depth", DepthNames[p.Depth], DepthNames, out var depth)) { p.Depth = Array.IndexOf(DepthNames, depth); lab.RebuildView(); }
+        }
+
+        // Replay recent sounds and mark single files keep / purge (purged ones stop playing at once).
+        private static void DrawSoundReview(MachineLab lab)
+        {
+            GUILayout.BeginHorizontal();
+            var track = Music.Current;
+            GUILayout.Label("Music: " + (track != null ? track.name : "—"), GUILayout.Width(220));
+            if (GUILayout.Button("Next", GUILayout.Width(44))) Music.Next(lab);
+            if (track != null) Marks(track.name);
+            GUILayout.EndHorizontal();
+            GUILayout.Label("Loops playing:");
+            foreach (var clip in Sfx.PlayingLoops()) SoundRow(clip, false);
+            GUILayout.Label("Recent (newest first):");
+            foreach (var clip in Sfx.Recent.ToArray()) SoundRow(clip, true);
+        }
+
+        private static void SoundRow(AudioClip clip, bool replay)
+        {
+            GUILayout.BeginHorizontal();
+            if (replay && GUILayout.Button("▶", GUILayout.Width(24))) Sfx.Replay(clip);
+            string source = SoundReview.Source(clip.name);
+            GUILayout.Label(new GUIContent(clip.name, source), GUILayout.Width(replay ? 200 : 228));
+            Marks(clip.name);
+            GUILayout.EndHorizontal();
+            if (source.Length > 0) GUILayout.Label("<size=10>   " + source + "</size>", Rich());
+        }
+
+        private static void Marks(string clip)
+        {
+            string mark = SoundReview.MarkOf(clip);
+            var old = GUI.color;
+            GUI.color = mark == "keep" ? Color.green : old;
+            if (GUILayout.Button("Keep", GUILayout.Width(44))) SoundReview.Toggle(clip, "keep");
+            GUI.color = mark == "purge" ? new Color(1f, 0.4f, 0.4f) : old;
+            if (GUILayout.Button("Purge", GUILayout.Width(48))) SoundReview.Toggle(clip, "purge");
+            GUI.color = old;
         }
 
         private static readonly string[] LabelNames = { "None", "Trait", "Full" };

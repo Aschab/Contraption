@@ -24,7 +24,7 @@ Multiple inputs are mixed per property with a rounded average before processing.
 ## Hints (learning curve)
 Saved per level (`MachineDefinition.Hints`, edited in the lab); early worlds show a lot, late worlds little or nothing.
 - **Home display**: each pipeline step lives at the display that shows its register most plainly (fewest terms, not a light, not inverted). Exchange has no register; it lives on the output pipe.
-- **Label plates** (per step: none / trait / full): written into the home display's label slot (every display model has a recessed slot along its bottom; the instrument sits above it) as a symbol sentence `[trait] [step] [trait] [threshold]`. Trait level names only the traits; full adds the step mark and the purge/swap threshold (2×2 grid). Siphon reads left → right (source into target). Modifiers: *pair* (the display mixes two registers) and *inverted* (it reads backwards). Symbols: `Resources/Labels` (the books use the same trait symbols).
+- **Label plates** (per step: none / trait / full): written into the label slot of every display that shows the step's register (every display model has a recessed slot along its bottom; the instrument sits above it) as a symbol sentence `[trait] [step] [trait] [threshold]`. Trait level names only the traits; full adds the step mark and the purge/swap threshold (2×2 grid). Siphon reads left → right (source into target). Modifiers: *pair* (the display mixes two registers) and *inverted* (it reads backwards). Symbols: `Resources/Labels` (the books use the same trait symbols).
 - **Rear view** (optional, F / R3 turns the machine): the back of every display in a frame, a socket on each one that hosts steps, the start badge (empty ring, by the inputs) and the end badge (full disc, by the output). Cables run start → steps in order → end, each one optional; each test swells a light on the start badge (the inputs), sends it along the cables in order (hidden links take the same time, unlit) and swells it again on the end badge. Labels appear on the rear nodes too. Controls can't be used while the machine is turned; tests can.
 
 ## Generator
@@ -44,7 +44,7 @@ Generate (seed + settings) → play/test the machine as the player would → ins
 
 ## Platform & input
 PC (Steam) first, consoles possible. Mouse is optional: every control must be reachable via keyboard/gamepad focus navigation.
-Focus (arrows / d-pad / mouse hover) reaches controls, the test trigger and displays (look only).
+Focus (arrows / d-pad / mouse hover) reaches controls, the test trigger and displays (look only). Esc / pad B deselects (the whole machine shows again; a selected display's label glows); moving the mouse off the machine deselects too.
 **Accessibility:** *Magnify* (on by default, toggle in the HUD for now) slides the focused part toward the camera so it reads about twice as large.
 
 ## Visuals

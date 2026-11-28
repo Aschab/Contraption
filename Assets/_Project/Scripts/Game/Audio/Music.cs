@@ -14,11 +14,16 @@ namespace Contraption.Game
         private static float[] _fade = { 0f, 0f };
         private static Coroutine _crossfade;
 
+        public static AudioClip Current => _decks != null && _decks[_active] != null ? _decks[_active].clip : null;
+
         public static void Next(MonoBehaviour host)
         {
-            if (!Init() || _tracks.Length == 0) return;
-            int pick = Random.Range(0, _tracks.Length);
-            if (_tracks.Length > 1 && pick == _last) pick = (pick + 1 + Random.Range(0, _tracks.Length - 1)) % _tracks.Length;
+            if (!Init()) return;
+            var usable = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < _tracks.Length; i++) if (!SoundReview.IsPurged(_tracks[i].name)) usable.Add(i);
+            if (usable.Count > 1) usable.Remove(_last);
+            if (usable.Count == 0) return;
+            int pick = usable[Random.Range(0, usable.Count)];
             _last = pick;
             _active = 1 - _active;
             var deck = _decks[_active];

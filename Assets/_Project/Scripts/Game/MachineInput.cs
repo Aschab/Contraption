@@ -10,7 +10,8 @@ namespace Contraption.Game
     // Moving focus past the machine's left/right edge lifts the manual/logbook (atEdge).
     // Keys: arrows move focus, W/D turn up, S/A turn down (joystick: W/A/S/D push), Space use, Z undo, R reset, T test, [ ] input, Tab port,
     // F turn the machine around (when it has a rear view).
-    // Gamepad: d-pad/left stick focus, right stick turn/push, A use, X undo, Y reset, B test, LB/RB input, Select port, R3 turn around.
+    // Esc (keyboard, in MachineLab) or B deselects so the whole machine shows; B with nothing selected tests.
+    // Gamepad: d-pad/left stick focus, right stick turn/push, A use, X undo, Y reset, B back/test, LB/RB input, Select port, R3 turn around.
     // Mouse: hover focuses a control, click use (joystick: click a side, centre to centre), right click / scroll back; click the big plunger/lever to test.
     public sealed class MachineInput
     {
@@ -43,11 +44,13 @@ namespace Contraption.Game
                 bool blocked = overGui(new Vector2(pos.x, Screen.height - pos.y));
                 RaycastHit hit = default;
                 bool hitSomething = !blocked && Physics.Raycast(cam.ScreenPointToRay(pos), out hit, 100f);
+                if (!hitSomething && !blocked && mouse.delta.ReadValue().sqrMagnitude > 0f) v.Release();
                 if (hitSomething && mouse.delta.ReadValue().sqrMagnitude > 0f)
                 {
-                    if (v.TryGetControl(hit.collider, out var hovered)) { if (v.Focus != hovered.Index) v.SetFocus(hovered.Index); }
-                    else if (v.IsTestTrigger(hit.collider) && !v.TriggerFocused) v.SetFocus(v.ControlCount);
-                    else if (v.TryGetDisplay(hit.collider, out int display) && v.Focus != display) v.SetFocus(display);
+                    if (v.TryGetControl(hit.collider, out var hovered)) { if (v.Focus != hovered.Index || !v.Engaged) v.SetFocus(hovered.Index); }
+                    else if (v.IsTestTrigger(hit.collider)) { if (!v.TriggerFocused || !v.Engaged) v.SetFocus(v.ControlCount); }
+                    else if (v.TryGetDisplay(hit.collider, out int display)) { if (v.Focus != display || !v.Engaged) v.SetFocus(display); }
+                    else v.Release();
                 }
                 if (hitSomething && mouse.leftButton.wasPressedThisFrame && v.IsTestTrigger(hit.collider)) s.Test();
                 else if (hitSomething && v.TryGetControl(hit.collider, out var cv))
@@ -81,7 +84,7 @@ namespace Contraption.Game
                 if (kb.sKey.wasPressedThisFrame) Turn(s, v, Vector2Int.down);
                 if (kb.aKey.wasPressedThisFrame) Turn(s, v, Vector2Int.left);
                 if (kb.dKey.wasPressedThisFrame) Turn(s, v, Vector2Int.right);
-                if (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame) Use(s, v, v.Focus);
+                if (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame) UseFocused(s, v);
                 if (kb.zKey.wasPressedThisFrame) Undo(s);
                 if (kb.rKey.wasPressedThisFrame) Reset(s);
                 if (kb.tKey.wasPressedThisFrame) s.Test();
@@ -101,10 +104,11 @@ namespace Contraption.Game
                 if (left != Vector2Int.zero && arrowsFree) Move(v, left, atEdge);
                 var right = Flick(pad.rightStick.ReadValue(), ref _lastRight);
                 if (right != Vector2Int.zero) Turn(s, v, right);
-                if (pad.buttonSouth.wasPressedThisFrame) Use(s, v, v.Focus);
+                if (pad.buttonSouth.wasPressedThisFrame) UseFocused(s, v);
                 if (pad.buttonWest.wasPressedThisFrame) Undo(s);
                 if (pad.buttonNorth.wasPressedThisFrame) Reset(s);
-                if (pad.buttonEast.wasPressedThisFrame && arrowsFree) s.Test();   // with a book up, B puts it down
+                // B is "back": deselects first; with nothing selected it runs a test. With a book up it puts the book down.
+                if (pad.buttonEast.wasPressedThisFrame && arrowsFree) { if (v.Engaged) v.Release(); else s.Test(); }
                 if (pad.leftShoulder.wasPressedThisFrame) CycleInput(s, -1);
                 if (pad.rightShoulder.wasPressedThisFrame) CycleInput(s, 1);
                 if (pad.selectButton.wasPressedThisFrame) SwitchPort(s);
@@ -138,6 +142,13 @@ namespace Contraption.Game
 
         public void CycleInput(MachineSession s, int dir) => s.SelectInput(ActivePort, s.SelectedInputs[ActivePort] + dir);
 
+        // Keys/pad act on the selection; with nothing selected the first press only selects again.
+        private static void UseFocused(MachineSession s, MachineView v)
+        {
+            if (!v.Engaged) { v.SetFocus(v.Focus); return; }
+            Use(s, v, v.Focus);
+        }
+
         // Primary use: press a button, flip a lever, advance a dial/knob, centre a joystick.
         private static void Use(MachineSession s, MachineView v, int c)
         {
@@ -158,6 +169,7 @@ namespace Contraption.Game
         // Up/right turn a control up, down/left turn it down; a joystick is pushed that way.
         private static void Turn(MachineSession s, MachineView v, Vector2Int dir)
         {
+            if (!v.Engaged) { v.SetFocus(v.Focus); return; }
             if (v.TriggerFocused) { s.Test(); return; }
             if (v.DisplayFocused) return;
             var kind = s.Definition.Controls[v.Focus].Kind;

@@ -17,6 +17,8 @@ namespace Contraption.Game
         }
 
         private const int Voices = 24;
+        // Last one-shots played, newest first (lab sound review).
+        public static readonly List<AudioClip> Recent = new();
         private static readonly List<LoopEntry> _loops = new();
         private const float Spatial = 0.6f;   // mostly panning; the table is small, so no distance falloff
         private static Dictionary<string, AudioClip[]> _sets;
@@ -34,9 +36,15 @@ namespace Contraption.Game
             if (_lastTime.TryGetValue(name, out float t) && now - t < 0.04f) return;
             _lastTime[name] = now;
 
-            int i = Random.Range(0, set.Length);
-            if (set.Length > 1 && _last.TryGetValue(name, out int prev) && i == prev) i = (i + 1 + Random.Range(0, set.Length - 1)) % set.Length;
+            var usable = new List<int>();
+            for (int k = 0; k < set.Length; k++) if (!SoundReview.IsPurged(set[k].name)) usable.Add(k);
+            if (usable.Count == 0) return;
+            if (usable.Count > 1 && _last.TryGetValue(name, out int prev)) usable.Remove(prev);
+            int i = usable[Random.Range(0, usable.Count)];
             _last[name] = i;
+            Recent.Remove(set[i]);
+            Recent.Insert(0, set[i]);
+            if (Recent.Count > 20) Recent.RemoveAt(Recent.Count - 1);
 
             var src = _voices[_next++ % Voices];
             src.transform.position = at ?? Vector3.zero;
@@ -44,6 +52,17 @@ namespace Contraption.Game
             src.clip = set[i];
             src.volume = volume * SoundSettings.Effects;
             src.pitch = pitch * Random.Range(0.96f, 1.04f);
+            src.Play();
+        }
+
+        public static void Replay(AudioClip clip)
+        {
+            Init();
+            var src = _voices[_next++ % Voices];
+            src.spatialBlend = 0f;
+            src.clip = clip;
+            src.volume = SoundSettings.Effects;
+            src.pitch = 1f;
             src.Play();
         }
 
@@ -62,11 +81,13 @@ namespace Contraption.Game
         public static AudioSource Loop(string name, Transform parent, Vector3 localPos, float volume = 1f, SoundChannel channel = SoundChannel.Effects)
         {
             if (!TryGet(name, out var set)) return null;
+            var clip = System.Array.Find(set, c => !SoundReview.IsPurged(c.name));
+            if (clip == null) return null;
             var go = new GameObject("Loop " + name);
             go.transform.SetParent(parent, false);
             go.transform.localPosition = localPos;
             var src = Configure(go.AddComponent<AudioSource>());
-            src.clip = set[0];
+            src.clip = clip;
             src.loop = true;
             src.spatialBlend = Spatial;
             _loops.Add(new LoopEntry { Source = src, Base = volume, Channel = channel });
@@ -88,15 +109,13 @@ namespace Contraption.Game
             foreach (var e in _loops) e.Source.volume = e.Base * SoundSettings.Gain(e.Channel);
         }
 
-        // Loops playing right now ("name · channel · volume"), for tracking down a sound.
-        public static List<string> Playing()
+        // Loops playing right now, for tracking down a sound.
+        public static List<AudioClip> PlayingLoops()
         {
-            var list = new List<string>();
+            var list = new List<AudioClip>();
             _loops.RemoveAll(e => e.Source == null);
             foreach (var e in _loops)
-                if (e.Source.isPlaying && e.Source.isActiveAndEnabled)
-                    list.Add($"{e.Source.clip.name} · {e.Channel} · {e.Source.volume:0.00}");
-            list.Sort();
+                if (e.Source.isPlaying && e.Source.isActiveAndEnabled && !list.Contains(e.Source.clip)) list.Add(e.Source.clip);
             return list;
         }
 

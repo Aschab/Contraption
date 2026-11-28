@@ -104,9 +104,10 @@ namespace Contraption.Game
                 if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && !OverGui(GuiMouse())) GUIUtility.keyboardControl = 0;
                 if (PanelsHidden) GUIUtility.keyboardControl = 0;
                 if (_menu.Open) { _menu.Tick(); return; }
-                // Esc puts a lifted book down first; with no book up it opens the menu.
-                if (((Keyboard.current?.escapeKey.wasPressedThisFrame ?? false) && !_desk.CapturesArrows)
-                    || (Gamepad.current?.startButton.wasPressedThisFrame ?? false))
+                // Esc: puts a lifted book down, else deselects the machine part, else opens the menu.
+                bool esc = (Keyboard.current?.escapeKey.wasPressedThisFrame ?? false) && !_desk.CapturesArrows;
+                if (esc && _view.Engaged) { _view.Release(); return; }
+                if (esc || (Gamepad.current?.startButton.wasPressedThisFrame ?? false))
                 {
                     _menu.Toggle();
                     return;
