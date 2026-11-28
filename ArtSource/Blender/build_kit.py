@@ -763,6 +763,45 @@ def workshop_room():
         lamp.build(f"Lamp{i}", root, (x, y, z))
     return root
 
+# ---------------------------------------------------------------- relief (depth around parts)
+# Every part footprint gets a raised housing (part sits RAISE in front of the body) and a deep bezel (part stays flush,
+# framed by a ring BEZEL deep, so it reads as recessed). Ledge: a cornice along a row boundary, one cell long.
+RAISE, BEZEL = 0.26, 0.2
+PART_SIZES = [(1, 1), (2, 1), (3, 1), (4, 1), (1, 2), (1, 3), (1, 4), (2, 2)]
+
+def housing(w, h):
+    mb = MB()
+    W, H = w * CELL - 0.06, h * CELL - 0.06
+    mb.box((W, RAISE, H), (0, -RAISE / 2, 0), "Body", 0.035)
+    mb.box((W + 0.006, 0.018, H + 0.006), (0, -RAISE * 0.45, 0), "Dark", 0.004)          # panel seam round the sides
+    for x in (-W / 2 + 0.018, W / 2 - 0.018):                                              # front rim
+        mb.box((0.026, 0.012, H - 0.01), (x, -RAISE - 0.004, 0), "Trim", 0.004)
+    for z in (-H / 2 + 0.018, H / 2 - 0.018):
+        mb.box((W - 0.01, 0.012, 0.026), (0, -RAISE - 0.004, z), "Trim", 0.004)
+    for sx in (-1, 1):                                                                     # side bolts
+        for z in ((-H / 2 + 0.12, H / 2 - 0.12) if h > 1 or H > 0.5 else (0,)):
+            mb.cyl(0.022, 0.02, (sx * (W / 2 + 0.006), -RAISE * 0.72, z), "Metal", segs=6, axis="X")
+    return mb.build("Housing" + sz(w, h))
+
+def bezel(w, h):
+    mb = MB()
+    W, H, r = w * CELL - 0.04, h * CELL - 0.04, 0.055
+    for x in (-W / 2 + r / 2, W / 2 - r / 2): mb.box((r, BEZEL, H), (x, -BEZEL / 2, 0), "Trim", 0.018)
+    for z in (-H / 2 + r / 2, H / 2 - r / 2): mb.box((W - 2 * r + 0.01, BEZEL, r), (0, -BEZEL / 2, z), "Trim", 0.018)
+    iw, ih = W - 2 * r, H - 2 * r                                                          # shadowed inner walls
+    for x in (-iw / 2 + 0.003, iw / 2 - 0.003): mb.box((0.006, BEZEL - 0.01, ih), (x, -BEZEL / 2, 0), "Dark", 0)
+    for z in (-ih / 2 + 0.003, ih / 2 - 0.003): mb.box((iw, BEZEL - 0.01, 0.006), (0, -BEZEL / 2, z), "Dark", 0)
+    for x in (-W / 2 + r / 2, W / 2 - r / 2):
+        for z in (-H / 2 + r / 2, H / 2 - r / 2): mb.cyl(0.016, 0.014, (x, -BEZEL - 0.004, z), "Metal", segs=6)
+    return mb.build("Bezel" + sz(w, h))
+
+def ledge():
+    mb = MB()
+    mb.box((CELL + 0.002, 0.1, 0.055), (0, -0.05, 0), "Trim", 0.014)
+    mb.box((CELL + 0.002, 0.012, 0.016), (0, -0.103, -0.012), "Dark", 0.003)
+    for x in (-CELL / 4, CELL / 4): mb.cyl(0.012, 0.012, (x, -0.103, 0.008), "Metal", segs=6)
+    return mb.build("Ledge")
+
 PROPS_SRC = os.path.join(PROJECT, "Share/objects")
 PROPS_TEX = os.path.join(EXPORT, "Textures")   # separate files: Unity ignores textures embedded by Blender
 # Tripo props from Share/objects: (file, size kind "h" height / "w" widest side, metres, (x, y, z), rot Z°, tilt X°).
@@ -846,6 +885,7 @@ SHARED = [
     disp_rune, lambda: disp_rune(2), lambda: disp_script(2), lambda: disp_script(3),
     test_plunger, test_lever, lamp,
     lambda: book("Book_Manual", "Accent"), lambda: book("Book_Log", "Dark"), book_sheet, table, sample_tube, sample_rack, workshop_room, workshop_props,
+    *[(lambda w=w, h=h: housing(w, h)) for (w, h) in PART_SIZES], *[(lambda w=w, h=h: bezel(w, h)) for (w, h) in PART_SIZES], ledge,
     fill_vent, fill_grille, fill_plate, fill_pipes, fill_porthole, fill_fan, fill_hatch,
     in_tank, in_flask, in_hopper, in_sphere, out_tank, out_vat, out_flask, vial, pipe, flange,
 ]

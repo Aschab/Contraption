@@ -131,8 +131,10 @@ namespace Contraption.Game
             if (GUILayout.Button("New layout")) lab.NewLayout();
             if (GUILayout.Button("New decor")) lab.NewDecor();
             bool steps = GUILayout.Toggle(l.ShowSteps, "Show steps");
+            bool ledges = GUILayout.Toggle(l.Ledges, "Ledges");
             GUILayout.EndHorizontal();
             if (steps != l.ShowSteps) { l.ShowSteps = steps; lab.RebuildView(); }
+            if (ledges != l.Ledges) { l.Ledges = ledges; lab.RebuildView(); }
 
             var names = Array.ConvertAll(Palettes.All, c => c.Name);
             GUILayout.BeginHorizontal();
@@ -167,7 +169,10 @@ namespace Contraption.Game
             if (GUILayout.Button("↓", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, 0, -1), "Moved");
             if (GUILayout.Button("→", GUILayout.Width(26))) Edit(lab, LayoutEditor.TryMove(l, p, 1, 0), "Moved");
             GUILayout.EndHorizontal();
+            if (Cycle("Depth", DepthNames[p.Depth], DepthNames, out var depth)) { p.Depth = Array.IndexOf(DepthNames, depth); lab.RebuildView(); }
         }
+
+        private static readonly string[] DepthNames = { "Flush", "Raised", "Framed" };
 
         private static void Recolor(MachineLab lab, MachineLayout l, MachineColors scheme)
         {

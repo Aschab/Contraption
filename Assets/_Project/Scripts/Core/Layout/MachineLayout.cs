@@ -26,6 +26,8 @@ namespace Contraption.Core
         public MachineColors Colors;
         // Shows the liquid after every pipeline step in glass vials (easier puzzles, tutorials).
         public bool ShowSteps;
+        // Cornices along the row boundaries.
+        public bool Ledges;
 
         public bool IsBody(int x, int y) => x >= 0 && y >= 0 && x < Columns && y < Rows && Body[y * Columns + x];
 
@@ -61,6 +63,9 @@ namespace Contraption.Core
         public int X, Y, W = 1, H = 1;
         // Panel colour: 0 main, 1 alt, 2 alt2. Glow: index into MachineColors.Glows.
         public int Tint, Glow;
+        // Relief: Flush on the body, Raised on a housing in front of it, Framed in a deep bezel.
+        public const int Flush = 0, Raised = 1, Framed = 2;
+        public int Depth;
 
         public bool Overlaps(int x, int y, int w, int h) => X < x + w && x < X + W && Y < y + h && y < Y + H;
     }

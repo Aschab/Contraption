@@ -49,6 +49,7 @@ namespace Contraption.Core
             l.DecorSeed = decorSeed;
             l.Fillers.Clear();
             LayoutGenerator.FillEmpty(l);
+            LayoutGenerator.Sculpt(l);
         }
     }
 }

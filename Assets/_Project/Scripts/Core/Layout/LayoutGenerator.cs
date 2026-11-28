@@ -184,6 +184,17 @@ namespace Contraption.Core
             l.TestStyle = rng.Pick(PartStyles.TestTriggers);
             Recolor(rng, l, rng.Pick(Palettes.All));
             FillEmpty(l);
+            Sculpt(l);
+        }
+
+        // Relief from DecorSeed (its own stream, so other decor stays put): some parts raised or framed, ledges on most machines.
+        public static void Sculpt(MachineLayout l)
+        {
+            var rng = new Rng(l.DecorSeed ^ 0xDE97B0UL);
+            l.Ledges = rng.Chance(0.65);
+            foreach (var p in l.Controls) p.Depth = rng.Chance(0.3) ? Placement.Raised : rng.Chance(0.3) ? Placement.Framed : Placement.Flush;
+            foreach (var p in l.Displays) p.Depth = rng.Chance(0.25) ? Placement.Raised : rng.Chance(0.35) ? Placement.Framed : Placement.Flush;
+            foreach (var f in l.Fillers) f.Depth = rng.Chance(0.15) ? Placement.Raised : rng.Chance(0.1) ? Placement.Framed : Placement.Flush;
         }
 
         // Covers every free body cell with a decorative panel; existing fillers are kept.

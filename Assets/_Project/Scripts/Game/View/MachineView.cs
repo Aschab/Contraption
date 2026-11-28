@@ -67,6 +67,7 @@ namespace Contraption.Game
 
             BuildChassis();
             BuildBase();
+            BuildRelief();
 
             var glyphs = GlyphSet.Create(def);
             for (int i = 0; i < def.Displays.Count; i++)
@@ -105,8 +106,39 @@ namespace Contraption.Game
         private float TopY(int x) => _baseH + (_layout.TopOf(x) + 1) * Cell;
         private float RightEdge => GridX(_layout.Columns);
 
+        // Raised parts stand on a housing in front of the body (matches RAISE in build_kit.py).
+        private const float Raise = 0.26f;
+
         private Vector3 Center(Placement p) =>
-            new(GridX(p.X) + p.W * Cell / 2f, _baseH + (p.Y + p.H / 2f) * Cell, 0f);
+            new(GridX(p.X) + p.W * Cell / 2f, _baseH + (p.Y + p.H / 2f) * Cell, p.Depth == Placement.Raised ? -Raise : 0f);
+
+        private static string Size(Placement p) => p.W == 1 && p.H == 1 ? "" : $"_{p.W}x{p.H}";
+
+        // Housings and bezels behind/around parts, and cornices along row boundaries that no part spans.
+        private void BuildRelief()
+        {
+            foreach (var p in _layout.AllPlacements())
+            {
+                if (p.Depth == Placement.Flush) continue;
+                string piece = (p.Depth == Placement.Raised ? "Housing" : "Bezel") + Size(p);
+                var c = Center(p);
+                if (_kit.Has(piece)) _kit.Spawn(piece, _root, new Vector3(c.x, c.y, 0f), _look);
+            }
+            if (!_layout.Ledges) return;
+            for (int y = 0; y < _layout.Rows - 1; y++)
+                for (int x = 0; x < _layout.Columns; x++)
+                {
+                    if (!_layout.IsBody(x, y) || !_layout.IsBody(x, y + 1) || Spanned(x, y)) continue;
+                    _kit.Spawn("Ledge", _root, new Vector3(ColumnX(x), _baseH + (y + 1) * Cell, 0f), _look);
+                }
+        }
+
+        private bool Spanned(int x, int y)
+        {
+            foreach (var p in _layout.AllPlacements())
+                if (p.Overlaps(x, y, 1, 1) && p.Overlaps(x, y + 1, 1, 1)) return true;
+            return false;
+        }
 
         private void BuildChassis()
         {

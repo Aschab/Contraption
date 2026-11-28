@@ -41,6 +41,7 @@ PC (Steam) first, consoles possible. Mouse is optional: every control must be re
 
 ## Visuals
 - **Grid layout** (saved with the level, editable in the lab): 2–5 rows, a silhouette (steps, towers, shoulders, arches, notches), parts placed anywhere. Each control/display kind has style variants with footprints 1×1, 2×2, 1×2–1×4, 2×1–4×1; a style never changes rules. Free cells get decorative fillers (vents, grilles, pipes, portholes, 2×2 fans/hatches).
+- **Relief** (saved, editable per part): each part/filler is flush, raised on a housing in front of the body, or framed in a deep bezel; most machines also get ledges (cornices) along row boundaries.
 - **Chassis** from dual-grid tiles (one per grid corner, 14 masks per kit) so any silhouette gets clean edges; top/base styles (crest, chimney, dome, antenna / feet, plinth, skid) per machine.
 - **Liquid flow**: input containers stand on top and drain into the body; the output pours into a container on the ground to the right. Only inputs *or* output are full at a time. Optional per machine: **Show steps** — a rack of vials with the liquid after each pipeline step.
 - **Liquid readability (bands)**: colour = hue; viscosity = surface wobble, drain speed, stream width; temperature 0 ice cubes, 1 cold mist, 3 steam, 4 boiling; flammability 2 sparks, 3 flames, 4 big flames; refraction = see-through distortion and gloss, 3 glow light, 4 glints. Exact values stay on the analyzer.
