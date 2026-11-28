@@ -47,6 +47,7 @@ namespace Contraption.Game
                 {
                     if (v.TryGetControl(hit.collider, out var hovered)) { if (v.Focus != hovered.Index) v.SetFocus(hovered.Index); }
                     else if (v.IsTestTrigger(hit.collider) && !v.TriggerFocused) v.SetFocus(v.ControlCount);
+                    else if (v.TryGetDisplay(hit.collider, out int display) && v.Focus != display) v.SetFocus(display);
                 }
                 if (hitSomething && mouse.leftButton.wasPressedThisFrame && v.IsTestTrigger(hit.collider)) s.Test();
                 else if (hitSomething && v.TryGetControl(hit.collider, out var cv))
@@ -140,7 +141,8 @@ namespace Contraption.Game
         // Primary use: press a button, flip a lever, advance a dial/knob, centre a joystick.
         private static void Use(MachineSession s, MachineView v, int c)
         {
-            if (c >= v.ControlCount) { s.Test(); return; }
+            if (c == v.ControlCount) { s.Test(); return; }
+            if (c > v.ControlCount) return;   // a display: look only
             var def = s.Definition.Controls[c];
             switch (def.Kind)
             {
@@ -156,7 +158,8 @@ namespace Contraption.Game
         // Up/right turn a control up, down/left turn it down; a joystick is pushed that way.
         private static void Turn(MachineSession s, MachineView v, Vector2Int dir)
         {
-            if (v.Focus >= v.ControlCount) { s.Test(); return; }
+            if (v.TriggerFocused) { s.Test(); return; }
+            if (v.DisplayFocused) return;
             var kind = s.Definition.Controls[v.Focus].Kind;
             if (kind == ControlKind.Button) { Use(s, v, v.Focus); return; }
             if (kind == ControlKind.Joystick) { Do(s, v, v.Focus, StickAction(dir)); return; }

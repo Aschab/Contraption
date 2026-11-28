@@ -32,6 +32,10 @@ namespace Contraption.Game
         private List<Liquid> _stages;
         private Coroutine _play;
         private MachineBack _back;
+        // Magnifiable parts (controls, then displays) with their resting positions and magnify progress.
+        private readonly List<Transform> _parts = new();
+        private readonly List<Vector3> _homes = new();
+        private readonly List<float> _mag = new();
         private Vector3 _pivot;
         private float _turn;
 
@@ -60,6 +64,9 @@ namespace Contraption.Game
             _displays.Clear();
             _inputs.Clear();
             _vials.Clear();
+            _parts.Clear();
+            _homes.Clear();
+            _mag.Clear();
             _testedInputs = null;
 
             if (session != _session) ShowingBack = false;
@@ -88,6 +95,9 @@ namespace Contraption.Game
                 var spin = MachineKit.FindOptional(go.transform, "Spin");
                 if (spin != null) spin.gameObject.AddComponent<Spinner>().Axis = Art.AxisIn(spin, _root, Vector3.forward);
             }
+
+            foreach (var c in _controls) AddPart(c.transform);
+            foreach (var d in _displays) AddPart(d.transform);
 
             var freeTops = new List<int>();
             for (int x = 0; x < _layout.Columns; x++) freeTops.Add(x);
@@ -163,12 +173,47 @@ namespace Contraption.Game
             if (_back != null) ShowingBack = !ShowingBack;
         }
 
+        private void AddPart(Transform t)
+        {
+            _parts.Add(t);
+            _homes.Add(t.localPosition);
+            _mag.Add(0f);
+        }
+
         private void Update()
         {
-            if (_root == null || !Turning) return;
-            _turn = Mathf.MoveTowards(_turn, ShowingBack ? 1f : 0f, Time.deltaTime / 0.9f);
-            ApplyTurn();
+            if (_root == null) return;
+            if (Turning)
+            {
+                _turn = Mathf.MoveTowards(_turn, ShowingBack ? 1f : 0f, Time.deltaTime / 0.9f);
+                ApplyTurn();
+            }
+            Magnify();
         }
+
+        // The focused part slides toward the camera along its view ray (so it stays in place on screen) and grows a little:
+        // about twice its size on screen. Accessibility option.
+        private const float MagnifyLift = 0.4f, MagnifyGrow = 1.25f, MagnifyTime = 0.2f;
+
+        private void Magnify()
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+            int focused = Accessibility.MagnifyFocus && !ShowingBack && !Turning ? FocusedPart : -1;
+            var eye = _root.InverseTransformPoint(cam.transform.position);
+            for (int i = 0; i < _parts.Count; i++)
+            {
+                float target = i == focused ? 1f : 0f;
+                if (_mag[i] == 0f && target == 0f) continue;
+                _mag[i] = Mathf.MoveTowards(_mag[i], target, Time.deltaTime / MagnifyTime);
+                float k = Mathf.SmoothStep(0f, 1f, _mag[i]);
+                _parts[i].localPosition = _homes[i] + (eye - _homes[i]) * (MagnifyLift * k);
+                _parts[i].localScale = Vector3.one * (1f + (MagnifyGrow - 1f) * k);
+            }
+        }
+
+        // Index into _parts of the focused control or display; -1 for the test trigger.
+        private int FocusedPart => Focus < _controls.Count ? Focus : Focus > _controls.Count ? Focus - 1 : -1;
 
         private void ApplyTurn()
         {
@@ -374,19 +419,32 @@ namespace Contraption.Game
             return view != null && _controls.Contains(view);
         }
 
-        // Focus indices: controls first, then the test trigger (index ControlCount).
+        // Focus indices: controls first, then the test trigger (index ControlCount), then the displays (look only).
         public bool TriggerFocused => Focus == _controls.Count;
+        public bool DisplayFocused => Focus > _controls.Count;
+        private int FocusCount => _controls.Count + 1 + _displays.Count;
+
+        public bool TryGetDisplay(Collider c, out int focusIndex)
+        {
+            var view = c != null ? c.GetComponentInParent<DisplayView>() : null;
+            int i = view != null ? _displays.IndexOf(view) : -1;
+            focusIndex = _controls.Count + 1 + i;
+            return i >= 0;
+        }
 
         public void SetFocus(int index)
         {
-            Focus = Values.Wrap(index, _controls.Count + 1);
+            Focus = Values.Wrap(index, FocusCount);
             for (int i = 0; i < _controls.Count; i++) _controls[i].SetFocused(i == Focus);
             _trigger.SetFocused(TriggerFocused);
+            for (int i = 0; i < _displays.Count; i++) _displays[i].SetFocused(Focus == _controls.Count + 1 + i);
         }
 
-        private Vector2 FocusPosition(int i) => i < _controls.Count
-            ? (Vector2)_controls[i].transform.localPosition
-            : (Vector2)(_trigger.transform.localPosition + _trigger.FocusPoint);
+        // Resting positions, so a magnified part doesn't skew navigation.
+        private Vector2 FocusPosition(int i) =>
+            i < _controls.Count ? (Vector2)_homes[i]
+            : i == _controls.Count ? (Vector2)(_trigger.transform.localPosition + _trigger.FocusPoint)
+            : (Vector2)_homes[i - 1];
 
         // Spatial navigation: the nearest control roughly in the pressed direction; false at the machine's edge.
         public bool MoveFocus(Vector2 dir)
@@ -394,7 +452,7 @@ namespace Contraption.Game
             var from = FocusPosition(Focus);
             int best = -1;
             float bestScore = float.MaxValue;
-            for (int i = 0; i <= _controls.Count; i++)
+            for (int i = 0; i < FocusCount; i++)
             {
                 if (i == Focus) continue;
                 var d = FocusPosition(i) - from;

@@ -11,8 +11,9 @@ namespace Contraption.Game
     // Each test sends one glowing bead through the chain; hidden links take the same time but show nothing.
     public sealed class MachineBack : MonoBehaviour
     {
-        private const float CableWidth = 0.06f, LinkTime = 0.3f;
+        private const float CableWidth = 0.06f, LinkTime = 0.4f, Flash = 0.3f;
         private Vector3[][] _links;
+        private Vector3 _start, _end;
         private Transform _bead;
         private Coroutine _pulse;
 
@@ -83,6 +84,8 @@ namespace Contraption.Game
             var chain = new List<Vector3> { startPos };
             for (int s = 0; s < steps; s++) chain.Add(sockets[hostOf[s]]);
             chain.Add(endPos);
+            v._start = startPos + new Vector3(0f, 0f, 0.08f);
+            v._end = endPos + new Vector3(0f, 0f, 0.08f);
             v._links = new Vector3[chain.Count - 1][];
             for (int i = 0; i + 1 < chain.Count; i++)
                 if (hints.Link(i)) v._links[i] = Cable(root, chain[i], chain[i + 1], look);
@@ -154,11 +157,14 @@ namespace Contraption.Game
         public void Pulse()
         {
             if (_pulse != null) StopCoroutine(_pulse);
+            _bead.localScale = Vector3.one * CableWidth * 1.7f;
             _pulse = StartCoroutine(Run());
         }
 
+        // The light swells on the start badge (the inputs), travels the cables, and swells again on the end badge.
         private IEnumerator Run()
         {
+            yield return Swell(_start);
             foreach (var path in _links)
             {
                 _bead.gameObject.SetActive(path != null);
@@ -173,8 +179,22 @@ namespace Contraption.Game
                     yield return null;
                 }
             }
+            yield return Swell(_end);
             _bead.gameObject.SetActive(false);
             _pulse = null;
+        }
+
+        private IEnumerator Swell(Vector3 at)
+        {
+            _bead.gameObject.SetActive(true);
+            _bead.localPosition = at;
+            var size = _bead.localScale;
+            for (float t = 0f; t < Flash; t += Time.deltaTime)
+            {
+                _bead.localScale = size * (1f + 1.5f * Mathf.Sin(t / Flash * Mathf.PI));
+                yield return null;
+            }
+            _bead.localScale = size;
         }
     }
 }

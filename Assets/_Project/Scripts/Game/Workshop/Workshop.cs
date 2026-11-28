@@ -6,13 +6,13 @@ namespace Contraption.Game
     // modelled at 1.1 m per cell; the table is real-world size), the manual lies front-left, the logbook front-right.
     public sealed class Workshop
     {
-        public const float MachineScale = 0.25f;
+        public const float MachineScale = 0.3f;
         public const float TableTop = 1.0f;
 
         public Transform Root { get; }
         public Vector3 MachineAnchor => new(0f, TableTop, 0.35f);
-        public Vector3 ManualRest => new(-1.75f, TableTop, -0.62f);
-        public Vector3 LogRest => new(1.75f, TableTop, -0.62f);
+        public Vector3 ManualRest => new(-1.3f, TableTop, -0.72f);
+        public Vector3 LogRest => new(1.3f, TableTop, -0.72f);
         public Vector3 RackOrigin => new(-2.05f, TableTop, 0.3f);
         // Table top corners and the rack/book tops: everything that must stay sharp.
         public static readonly Vector3[] SharpPoints =

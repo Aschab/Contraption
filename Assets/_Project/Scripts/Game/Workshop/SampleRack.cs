@@ -15,7 +15,7 @@ namespace Contraption.Game
 
         private readonly MachineKit _kit;
         private readonly Transform _root;
-        private readonly Vector3 _origin;
+        private Vector3 _origin;
         private readonly List<LiquidContainerView> _tubes = new();
         private readonly List<Vector3> _rest = new();
         private MachineSession _session;
@@ -28,8 +28,13 @@ namespace Contraption.Game
             _origin = leftmostRack;
         }
 
-        // The right edge of the racks, so the machine can keep clear of them.
-        public float RightEdge(int poolSize) => _origin.x + RackWidth * (Mathf.Max(1, (poolSize + PerRack - 1) / PerRack) - 0.5f);
+        private static int Racks(int poolSize) => Mathf.Max(1, (poolSize + PerRack - 1) / PerRack);
+
+        // Racks stand just left of the machine (call before Bind).
+        public void PlaceLeftOf(float x, int poolSize) => _origin.x = x - RackWidth * (Racks(poolSize) - 0.5f);
+
+        public Bounds Area(int poolSize) =>
+            new(_origin + new Vector3(RackWidth * (Racks(poolSize) - 1) / 2f, 0.2f, 0f), new Vector3(RackWidth * Racks(poolSize), 0.4f, 0.2f));
 
         public void Bind(MachineSession session)
         {

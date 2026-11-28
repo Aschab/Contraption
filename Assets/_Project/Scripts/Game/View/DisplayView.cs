@@ -18,6 +18,7 @@ namespace Contraption.Game
 
         private Placement _placement;
         private Transform _label;
+        private GameObject _focusFrame;
         private DisplayDef _def;
         private Look _look;
         private GlyphSet _glyphs;
@@ -37,6 +38,10 @@ namespace Contraption.Game
             var go = new GameObject($"{def.Kind} display");
             go.transform.SetParent(machine, false);
             go.transform.localPosition = pos;
+            // Displays take focus too (hover / arrows), so they can be magnified.
+            var box = go.AddComponent<BoxCollider>();
+            box.size = new Vector3(p.W * MachineView.Cell - 0.1f, p.H * MachineView.Cell - 0.1f, 0.4f);
+            box.center = new Vector3(0f, 0f, -0.2f);
             var v = go.AddComponent<DisplayView>();
             v._def = def;
             v._look = look;
@@ -45,6 +50,7 @@ namespace Contraption.Game
 
             var body = kit.Spawn(p.Style, go.transform, Vector3.zero, look).transform;
             v._label = MachineKit.FindOptional(body, "Label");
+            v._focusFrame = FocusFrame(go.transform, p.W * MachineView.Cell - 0.06f, p.H * MachineView.Cell - 0.06f, look.Glow);
             switch (def.Kind)
             {
                 case DisplayKind.Light: v._bulb = MachineKit.Find(body, "Bulb").GetComponent<Renderer>(); break;
@@ -90,6 +96,23 @@ namespace Contraption.Game
             _cursor = Art.Prim(PrimitiveType.Cube, root, c + new Vector3(GlyphSet.WordLength / 2f * pitch, -letter / 2f, 0f),
                 new Vector3(letter * 0.6f, 0.05f, 0.015f), _look.Glow).GetComponent<Renderer>();
             Art.Paint(_cursor, _look.Glow, _look.Glow * 1.5f);
+        }
+
+        public void SetFocused(bool focused) => _focusFrame.SetActive(focused);
+
+        private static GameObject FocusFrame(Transform parent, float w, float h, Color glow)
+        {
+            var frame = new GameObject("Focus");
+            frame.transform.SetParent(parent, false);
+            const float t = 0.05f, z = -0.17f;
+            foreach (var (pos, size) in new[]
+            {
+                (new Vector3(0f, h / 2f, z), new Vector3(w, t, t)), (new Vector3(0f, -h / 2f, z), new Vector3(w, t, t)),
+                (new Vector3(w / 2f, 0f, z), new Vector3(t, h, t)), (new Vector3(-w / 2f, 0f, z), new Vector3(t, h, t)),
+            })
+                Art.Paint(Art.Prim(PrimitiveType.Cube, frame.transform, pos, size, glow).GetComponent<Renderer>(), glow, glow * 1.5f);
+            frame.SetActive(false);
+            return frame;
         }
 
         // Writes step labels into the slot (one sentence per step hosted here).

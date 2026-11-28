@@ -177,13 +177,7 @@ namespace Contraption.Game
             _input.ActivePort = 0;
             _view.transform.position = _workshop.MachineAnchor;
             _view.Build(Session, _kits[KitIndex]);
-            // Keep the machine clear of the sample racks on the left.
-            float clear = _rack.RightEdge(def.InputPool.Count) + 0.12f - _view.Bounds.min.x;
-            if (clear > 0f)
-            {
-                _view.transform.position += new Vector3(clear, 0f, 0f);
-                _view.UpdateBounds();
-            }
+            _rack.PlaceLeftOf(_view.Bounds.min.x - 0.12f, def.InputPool.Count);
             _desk.Bind(Session);
             _rack.Bind(Session);
             Frame();
@@ -280,7 +274,7 @@ namespace Contraption.Game
         {
             var b = _view.Bounds;
             b.Encapsulate(_desk.RestBounds);
-            b.Encapsulate(new Bounds(_workshop.RackOrigin + new Vector3(0f, 0.2f, 0f), new Vector3(0.7f, 0.4f, 0.2f)));
+            if (Session != null) b.Encapsulate(_rack.Area(Session.Definition.InputPool.Count));
             return Fit(b, 1f);
         }
 
