@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Contraption.Core;
 using UnityEngine;
@@ -7,11 +8,13 @@ namespace Contraption.Game
     // The machine's rear (seen when it is turned around): every display's back in a frame, a socket on each one that
     // hosts pipeline steps, and cables from the start badge (empty ring, by the inputs) through the steps in order
     // to the end badge (full disc, by the output). Hints choose which cables and labels exist.
+    // Each test sends one glowing bead through the chain; hidden links take the same time but show nothing.
     public sealed class MachineBack : MonoBehaviour
     {
-        private const float CableWidth = 0.06f, BeadSpeed = 0.45f;
-        private readonly List<Vector3[]> _cables = new();
-        private readonly List<Transform> _beads = new();
+        private const float CableWidth = 0.06f, LinkTime = 0.3f;
+        private Vector3[][] _links;
+        private Transform _bead;
+        private Coroutine _pulse;
 
         // Rear node of a display: centre and size in machine space (z is ignored; the rear face is at `back`).
         public struct Node
@@ -69,7 +72,7 @@ namespace Contraption.Game
                     if (marks.Count > 0) rows.Add(marks);
                 }
                 if (rows.Count > 0)
-                    Plates.Build(root, new Vector3(c.x, sockets[n].y - 0.32f, sockets[n].z), rows, node.Size.x - 0.2f, look, true, 0.13f);
+                    Plates.Build(root, new Vector3(c.x, sockets[n].y - 0.36f, sockets[n].z), rows, node.Size.x - 0.12f, look, true, 0.2f);
             }
 
             var startPos = new Vector3(start.x, start.y, back + 0.06f);
@@ -80,8 +83,13 @@ namespace Contraption.Game
             var chain = new List<Vector3> { startPos };
             for (int s = 0; s < steps; s++) chain.Add(sockets[hostOf[s]]);
             chain.Add(endPos);
+            v._links = new Vector3[chain.Count - 1][];
             for (int i = 0; i + 1 < chain.Count; i++)
-                if (hints.Link(i)) v.Cable(root, chain[i], chain[i + 1], look);
+                if (hints.Link(i)) v._links[i] = Cable(root, chain[i], chain[i + 1], look);
+            var bead = Art.Prim(PrimitiveType.Sphere, root, startPos, Vector3.one * CableWidth * 1.7f, look.Glow);
+            Art.Paint(bead.GetComponent<Renderer>(), look.Glow, look.Glow * 4f);
+            bead.SetActive(false);
+            v._bead = bead.transform;
             return v;
         }
 
@@ -108,7 +116,7 @@ namespace Contraption.Game
         }
 
         // A hanging cable bulging away from the machine; a loop when both ends share a socket.
-        private void Cable(Transform root, Vector3 a, Vector3 b, Look look)
+        private static Vector3[] Cable(Transform root, Vector3 a, Vector3 b, Look look)
         {
             Vector3 p1, p2;
             var outward = new Vector3(0f, 0f, 0.18f);
@@ -139,23 +147,34 @@ namespace Contraption.Game
             }
             foreach (var end in new[] { a, b })
                 Cyl(root, end + new Vector3(0f, 0f, 0.05f), 0.055f, 0.08f, look.Metal);
-
-            var bead = Art.Prim(PrimitiveType.Sphere, root, a, Vector3.one * CableWidth * 1.5f, look.Glow);
-            Art.Paint(bead.GetComponent<Renderer>(), look.Glow, look.Glow * 3f);
-            _cables.Add(path);
-            _beads.Add(bead.transform);
+            return path;
         }
 
-        // A glowing bead runs along every cable from its earlier step to its later one.
-        private void Update()
+        // One pass of the bead from start to end, called when a test runs.
+        public void Pulse()
         {
-            for (int i = 0; i < _cables.Count; i++)
+            if (_pulse != null) StopCoroutine(_pulse);
+            _pulse = StartCoroutine(Run());
+        }
+
+        private IEnumerator Run()
+        {
+            foreach (var path in _links)
             {
-                var path = _cables[i];
-                float t = Mathf.Repeat(Time.time * BeadSpeed + i * 0.37f, 1f) * (path.Length - 1);
-                int k = Mathf.Min((int)t, path.Length - 2);
-                _beads[i].localPosition = Vector3.Lerp(path[k], path[k + 1], t - k);
+                _bead.gameObject.SetActive(path != null);
+                for (float t = 0f; t < LinkTime; t += Time.deltaTime)
+                {
+                    if (path != null)
+                    {
+                        float f = Mathf.SmoothStep(0f, 1f, t / LinkTime) * (path.Length - 1);
+                        int k = Mathf.Min((int)f, path.Length - 2);
+                        _bead.localPosition = Vector3.Lerp(path[k], path[k + 1], f - k);
+                    }
+                    yield return null;
+                }
             }
+            _bead.gameObject.SetActive(false);
+            _pulse = null;
         }
     }
 }

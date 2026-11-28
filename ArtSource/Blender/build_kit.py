@@ -295,6 +295,37 @@ def disp_glyph(w=1, h=1):
         c.build(f"Cell{i}", root, ((i % 3 - 1) * 0.18 * k, -0.12, (1 - i // 3) * 0.18 * k))
     return root
 
+# Every display has a recessed label slot along its bottom edge (Unity writes the step label into the "Label"
+# empty); the instrument shrinks uniformly into the panel above it. Keep LABEL_H in sync with DisplayView.LabelSlot.
+LABEL_H, LABEL_GAP = 0.24, 0.03
+
+def label_scale(h):
+    H = h * CELL - 0.14
+    return (H - 2 * LABEL_GAP - LABEL_H) / H
+
+def labelled(root, w, h):
+    W, H = w * CELL - 0.14, h * CELL - 0.14
+    k = label_scale(h)
+    slot_z = -H / 2 + LABEL_GAP + LABEL_H / 2
+    M = Matrix.Translation((0, -0.035, slot_z + LABEL_H / 2 + H * k / 2)) @ Matrix.Scale(k, 4)
+    root.data.transform(M)
+    for o in root.children:
+        if o.type == 'MESH': o.data.transform(Matrix.Scale(k, 4))
+        o.location = M @ o.location
+    mb = MB(); mb.bm.from_mesh(root.data); mb.mats = list(root.data.materials)
+    plate(mb, w, h)
+    sw = W - 0.16
+    mb.box((sw + 0.05, 0.02, LABEL_H + 0.05), (0, -0.045, slot_z), "Trim", 0.01)
+    mb.box((sw, 0.02, LABEL_H), (0, -0.055, slot_z), "Dark", 0)
+    for x in (-sw / 2 - 0.0, sw / 2 + 0.0):
+        mb.cyl(0.014, 0.02, (x, -0.06, slot_z), "Metal", segs=6)
+    bmesh.ops.recalc_face_normals(mb.bm, faces=mb.bm.faces)
+    mb.bm.to_mesh(root.data); mb.bm.free()
+    for m in mb.mats[len(root.data.materials):]: root.data.materials.append(m)
+    for poly in root.data.polygons: poly.use_smooth = False
+    empty("Label", root, (0, -0.066, slot_z))
+    return root
+
 # ---------------------------------------------------------------- test triggers (outside the grid)
 def test_plunger():
     # Stands on the chassis top; "Moving" is pushed down when the machine runs a test.
@@ -872,17 +903,21 @@ def workshop_props():
     return root
 
 # ---------------------------------------------------------------- catalog
+DISPLAYS = [
+    *[(lambda w=w, h=h: labelled(disp_light(w, h), w, h)) for (w, h) in ((1, 1), (1, 2), (2, 1), (2, 2))],
+    *[(lambda w=w, h=h: labelled(disp_bar(w, h), w, h)) for (w, h) in ((1, 1), (1, 2), (1, 3), (1, 4), (2, 1), (3, 1), (4, 1))],
+    *[(lambda w=w, h=h: labelled(disp_gauge(w, h), w, h)) for (w, h) in ((1, 1), (2, 2), (2, 1), (3, 1))],
+    *[(lambda w=w, h=h: labelled(disp_glyph(w, h), w, h)) for (w, h) in ((1, 1), (2, 1), (2, 2))],
+    lambda: labelled(disp_rune(1), 1, 1), lambda: labelled(disp_rune(2), 2, 2),
+    lambda: labelled(disp_script(2), 2, 1), lambda: labelled(disp_script(3), 3, 1),
+]
 SHARED = [
     ctl_button, lambda: ctl_button(2, 1), lambda: ctl_button(2, 2),
     ctl_lever, lambda: ctl_lever(2), lambda: ctl_lever(3),
     ctl_dial, lambda: ctl_dial(2), ctl_knob, lambda: ctl_knob(2),
     *[(lambda w=w, h=h: ctl_slider(w, h)) for (w, h) in ((2, 1), (3, 1), (4, 1), (1, 2), (1, 3), (1, 4))],
     ctl_joystick, lambda: ctl_joystick(2),
-    *[(lambda w=w, h=h: disp_light(w, h)) for (w, h) in ((1, 1), (1, 2), (2, 1), (2, 2))],
-    *[(lambda w=w, h=h: disp_bar(w, h)) for (w, h) in ((1, 1), (1, 2), (1, 3), (1, 4), (2, 1), (3, 1), (4, 1))],
-    *[(lambda w=w, h=h: disp_gauge(w, h)) for (w, h) in ((1, 1), (2, 2), (2, 1), (3, 1))],
-    *[(lambda w=w, h=h: disp_glyph(w, h)) for (w, h) in ((1, 1), (2, 1), (2, 2))],
-    disp_rune, lambda: disp_rune(2), lambda: disp_script(2), lambda: disp_script(3),
+    *DISPLAYS,
     test_plunger, test_lever, lamp,
     lambda: book("Book_Manual", "Accent"), lambda: book("Book_Log", "Dark"), book_sheet, table, sample_tube, sample_rack, workshop_room, workshop_props,
     *[(lambda w=w, h=h: housing(w, h)) for (w, h) in PART_SIZES], *[(lambda w=w, h=h: bezel(w, h)) for (w, h) in PART_SIZES], ledge,

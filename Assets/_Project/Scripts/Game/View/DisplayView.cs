@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Contraption.Core;
 using UnityEngine;
 
@@ -5,6 +6,18 @@ namespace Contraption.Game
 {
     public sealed class DisplayView : MonoBehaviour
     {
+        // Every display model has a recessed label slot along its bottom edge ("Label" empty) and its instrument
+        // shrunk into the panel above. Keep in sync with LABEL_H / LABEL_GAP / label_scale in build_kit.py.
+        public const float LabelSlot = 0.24f, LabelGap = 0.03f;
+
+        public static float ContentScale(int h)
+        {
+            float panel = h * MachineView.Cell - 0.14f;
+            return (panel - 2f * LabelGap - LabelSlot) / panel;
+        }
+
+        private Placement _placement;
+        private Transform _label;
         private DisplayDef _def;
         private Look _look;
         private GlyphSet _glyphs;
@@ -28,8 +41,10 @@ namespace Contraption.Game
             v._def = def;
             v._look = look;
             v._glyphs = glyphs;
+            v._placement = p;
 
             var body = kit.Spawn(p.Style, go.transform, Vector3.zero, look).transform;
+            v._label = MachineKit.FindOptional(body, "Label");
             switch (def.Kind)
             {
                 case DisplayKind.Light: v._bulb = MachineKit.Find(body, "Bulb").GetComponent<Renderer>(); break;
@@ -59,21 +74,31 @@ namespace Contraption.Game
         {
             var c = root.InverseTransformPoint(screen.position);
             _script = p.Style.StartsWith("Disp_Script");
+            float k = ContentScale(p.H);
             if (!_script)
             {
-                float size = 0.42f * p.W;
-                _strokes = new[] { Glyphs.BuildStrokes(root, c, size, 0.05f * p.W, _look.Glow) };
+                float size = 0.42f * p.W * k;
+                _strokes = new[] { Glyphs.BuildStrokes(root, c, size, 0.05f * p.W * k, _look.Glow) };
                 return;
             }
-            float width = p.W * MachineView.Cell - 0.6f;
-            float pitch = Mathf.Min(0.5f, width / (GlyphSet.WordLength + 1));
-            float letter = Mathf.Min(0.36f, pitch * 0.7f);
+            float width = (p.W * MachineView.Cell - 0.6f) * k;
+            float pitch = Mathf.Min(0.5f * k, width / (GlyphSet.WordLength + 1));
+            float letter = Mathf.Min(0.36f * k, pitch * 0.7f);
             _strokes = new Renderer[GlyphSet.WordLength][];
             for (int i = 0; i < GlyphSet.WordLength; i++)
-                _strokes[i] = Glyphs.BuildStrokes(root, c + new Vector3((i - GlyphSet.WordLength / 2f) * pitch, 0f, 0f), letter, 0.04f, _look.Glow);
+                _strokes[i] = Glyphs.BuildStrokes(root, c + new Vector3((i - GlyphSet.WordLength / 2f) * pitch, 0f, 0f), letter, 0.04f * k, _look.Glow);
             _cursor = Art.Prim(PrimitiveType.Cube, root, c + new Vector3(GlyphSet.WordLength / 2f * pitch, -letter / 2f, 0f),
                 new Vector3(letter * 0.6f, 0.05f, 0.015f), _look.Glow).GetComponent<Renderer>();
             Art.Paint(_cursor, _look.Glow, _look.Glow * 1.5f);
+        }
+
+        // Writes step labels into the slot (one sentence per step hosted here).
+        public void SetLabel(List<List<Plates.Mark>> rows)
+        {
+            if (_label == null || rows == null || rows.Count == 0) return;
+            var c = transform.InverseTransformPoint(_label.position) + new Vector3(0f, 0f, -0.003f);
+            float width = _placement.W * MachineView.Cell - 0.14f - 0.2f;
+            Plates.Fill(transform, c, width, LabelSlot, rows, _look.Panel, _look);
         }
 
         private static Renderer[] Children(Transform body, string prefix, int count)

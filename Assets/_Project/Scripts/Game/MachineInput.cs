@@ -24,8 +24,17 @@ namespace Contraption.Game
             if (v.HasBack && ((keyboardFree && (Keyboard.current?.fKey.wasPressedThisFrame ?? false))
                               || (Gamepad.current?.rightStickButton.wasPressedThisFrame ?? false)))
                 v.Turn();
-            // Controls are out of reach while the machine shows its rear.
-            if (v.ShowingBack || v.Turning) return;
+            // Controls are out of reach while the machine shows its rear; tests still run (the cables light up).
+            if (v.ShowingBack || v.Turning)
+            {
+                if (keyboardFree && (Keyboard.current?.tKey.wasPressedThisFrame ?? false)) s.Test();
+                if (arrowsFree && (Gamepad.current?.buttonEast.wasPressedThisFrame ?? false)) s.Test();
+                var m = Mouse.current;
+                if (m != null && m.leftButton.wasPressedThisFrame && !overGui(new Vector2(m.position.ReadValue().x, Screen.height - m.position.ReadValue().y))
+                    && Physics.Raycast(cam.ScreenPointToRay(m.position.ReadValue()), out var h, 100f) && v.IsTestTrigger(h.collider))
+                    s.Test();
+                return;
+            }
 
             var mouse = Mouse.current;
             if (mouse != null)

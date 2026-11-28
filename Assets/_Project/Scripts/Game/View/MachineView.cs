@@ -118,7 +118,7 @@ namespace Contraption.Game
         // ---------------------------------------------------------------- hints: label plates and the rear
         private float ExitY => _baseH + (_layout.TopOf(_layout.Columns - 1) + 0.5f) * Cell;
 
-        // A plate bolted across the bottom edge of each display that hosts labelled steps; Exchange steps label the output pipe.
+        // Labels go into each home display's label slot; Exchange steps get a plate on the output pipe.
         private void BuildPlates(MachineDefinition def)
         {
             if (def.Hints == null) return;
@@ -131,16 +131,9 @@ namespace Contraption.Game
                 int slot = home < 0 ? def.Displays.Count : home;
                 (rows[slot] ??= new List<List<Plates.Mark>>()).Add(marks);
             }
-            for (int i = 0; i < def.Displays.Count; i++)
-            {
-                if (rows[i] == null) continue;
-                var p = _layout.Displays[i];
-                var c = Center(p);
-                float front = def.Displays[i].Kind == DisplayKind.Light ? 0.31f : 0.2f;
-                Plates.Build(_root, new Vector3(c.x, c.y - p.H * Cell / 2f + 0.1f, c.z - front), rows[i], p.W * Cell - 0.1f, _look, false);
-            }
+            for (int i = 0; i < def.Displays.Count; i++) _displays[i].SetLabel(rows[i]);
             if (rows[def.Displays.Count] != null)
-                Plates.Build(_root, new Vector3(RightEdge + 0.35f, ExitY + 0.28f, PipeZ - 0.12f), rows[def.Displays.Count], 1.2f, _look, false);
+                Plates.Build(_root, new Vector3(RightEdge + 0.45f, ExitY + 0.36f, PipeZ - 0.12f), rows[def.Displays.Count], 1.4f, _look, false, 0.22f);
         }
 
         private MachineBack BuildBack(MachineDefinition def)
@@ -461,6 +454,7 @@ namespace Contraption.Game
             _stages = MachineRules.Stages(def, _session.CopyState(), inputs);
             _testedInputs = (int[])_session.SelectedInputs.Clone();
             _trigger.Play();
+            if (_back != null) _back.Pulse();
             if (_play != null) StopCoroutine(_play);
             _play = null;
             if (AnimateTests) _play = StartCoroutine(Play(inputs));
