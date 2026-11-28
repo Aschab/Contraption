@@ -6,11 +6,18 @@ namespace Contraption.Game
     // Sound effects from Resources/Audio/Sfx (made by ArtSource/Audio/synth_sfx.py) and ambience loops from
     // Resources/Audio/Ambience (Suno). One-shots come as variations "<name>_<i>": each play picks a random one
     // (never the same twice in a row) with a slight pitch wobble. Loops are a single "<name>" clip.
+    // Volumes follow SoundSettings: one-shots use the Effects channel, loops the channel they were made with.
     public static class Sfx
     {
-        public static float Volume = 1f;
+        private sealed class LoopEntry
+        {
+            public AudioSource Source;
+            public float Base;
+            public SoundChannel Channel;
+        }
 
         private const int Voices = 24;
+        private static readonly List<LoopEntry> _loops = new();
         private const float Spatial = 0.6f;   // mostly panning; the table is small, so no distance falloff
         private static Dictionary<string, AudioClip[]> _sets;
         private static readonly Dictionary<string, int> _last = new();
@@ -35,7 +42,7 @@ namespace Contraption.Game
             src.transform.position = at ?? Vector3.zero;
             src.spatialBlend = at.HasValue ? Spatial : 0f;
             src.clip = set[i];
-            src.volume = volume * Volume;
+            src.volume = volume * SoundSettings.Effects;
             src.pitch = pitch * Random.Range(0.96f, 1.04f);
             src.Play();
         }
@@ -52,7 +59,7 @@ namespace Contraption.Game
         }
 
         // A looping source on `parent` (not playing yet).
-        public static AudioSource Loop(string name, Transform parent, Vector3 localPos, float volume = 1f)
+        public static AudioSource Loop(string name, Transform parent, Vector3 localPos, float volume = 1f, SoundChannel channel = SoundChannel.Effects)
         {
             if (!TryGet(name, out var set)) return null;
             var go = new GameObject("Loop " + name);
@@ -61,16 +68,43 @@ namespace Contraption.Game
             var src = Configure(go.AddComponent<AudioSource>());
             src.clip = set[0];
             src.loop = true;
-            src.volume = volume * Volume;
             src.spatialBlend = Spatial;
+            _loops.Add(new LoopEntry { Source = src, Base = volume, Channel = channel });
+            src.volume = volume * SoundSettings.Gain(channel);
             return src;
+        }
+
+        // Changes a loop's own volume; the channel volume still applies on top.
+        public static void SetVolume(AudioSource src, float volume)
+        {
+            foreach (var e in _loops)
+                if (e.Source == src) { e.Base = volume; src.volume = volume * SoundSettings.Gain(e.Channel); return; }
+        }
+
+        private static void ApplyVolumes()
+        {
+            AudioListener.volume = SoundSettings.Master;
+            _loops.RemoveAll(e => e.Source == null);
+            foreach (var e in _loops) e.Source.volume = e.Base * SoundSettings.Gain(e.Channel);
+        }
+
+        // Loops playing right now ("name · channel · volume"), for tracking down a sound.
+        public static List<string> Playing()
+        {
+            var list = new List<string>();
+            _loops.RemoveAll(e => e.Source == null);
+            foreach (var e in _loops)
+                if (e.Source.isPlaying && e.Source.isActiveAndEnabled)
+                    list.Add($"{e.Source.clip.name} · {e.Channel} · {e.Source.volume:0.00}");
+            list.Sort();
+            return list;
         }
 
         // A non-positional loop that plays for the whole scene (room tone).
         public static AudioSource Ambient(string name, float volume)
         {
             Init();
-            var src = Loop(name, _voices[0].transform.parent, Vector3.zero, volume);
+            var src = Loop(name, _voices[0].transform.parent, Vector3.zero, volume, SoundChannel.Ambience);
             if (src == null) return null;
             src.spatialBlend = 0f;
             src.time = Random.Range(0f, src.clip.length);
@@ -90,6 +124,9 @@ namespace Contraption.Game
         {
             if (_voices != null && _voices[0] != null) return;
             if (Object.FindAnyObjectByType<AudioListener>() == null && Camera.main != null) Camera.main.gameObject.AddComponent<AudioListener>();
+            AudioListener.volume = SoundSettings.Master;
+            SoundSettings.Changed -= ApplyVolumes;
+            SoundSettings.Changed += ApplyVolumes;
             if (_sets == null)
             {
                 var groups = new Dictionary<string, List<AudioClip>>();

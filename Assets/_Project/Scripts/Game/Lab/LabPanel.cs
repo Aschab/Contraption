@@ -11,7 +11,7 @@ namespace Contraption.Game
     {
         public const float Width = 400f;
         private Vector2 _scroll;
-        private bool _showSettings = true, _showRules, _showLevels, _showLayout = true, _showHints = true;
+        private bool _showSettings = true, _showRules, _showLevels, _showLayout = true, _showHints = true, _showSounds;
         private string _solutionText = "";
 
         public void Draw(Rect area, MachineLab lab)
@@ -86,6 +86,13 @@ namespace Contraption.Game
                 session.Definition.Name = GUILayout.TextField(session.Definition.Name);
                 if (GUILayout.Button("Save", GUILayout.Width(60))) lab.Save();
                 GUILayout.EndHorizontal();
+            }
+
+            _showSounds = GUILayout.Toggle(_showSounds, "Now playing (loops)");
+            if (_showSounds)
+            {
+                var playing = Sfx.Playing();
+                GUILayout.Label(playing.Count == 0 ? "—" : string.Join("\n", playing));
             }
 
             _showLevels = GUILayout.Toggle(_showLevels, "Saved levels");

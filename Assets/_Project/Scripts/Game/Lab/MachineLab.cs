@@ -18,6 +18,7 @@ namespace Contraption.Game
         private readonly MachineInput _input = new();
         private readonly AnalyzerHud _hud = new();
         private readonly LabPanel _panel = new();
+        private readonly PauseMenu _menu = new();
         private MachineView _view;
         private MachineKit[] _kits;
         private Workshop _workshop;
@@ -101,6 +102,14 @@ namespace Contraption.Game
             {
                 if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && !OverGui(GuiMouse())) GUIUtility.keyboardControl = 0;
                 if (PanelsHidden) GUIUtility.keyboardControl = 0;
+                if (_menu.Open) { _menu.Tick(); return; }
+                // Esc puts a lifted book down first; with no book up it opens the menu.
+                if (((Keyboard.current?.escapeKey.wasPressedThisFrame ?? false) && !_desk.CapturesArrows)
+                    || (Gamepad.current?.startButton.wasPressedThisFrame ?? false))
+                {
+                    _menu.Toggle();
+                    return;
+                }
                 bool keyboardFree = GUIUtility.keyboardControl == 0;
                 bool bookUp = _desk.CapturesArrows;   // before the desk ticks, so a press that puts a book down isn't reused below
                 _desk.Tick(_camera, OverGui, keyboardFree);
@@ -116,10 +125,13 @@ namespace Contraption.Game
             if (PanelsHidden)
             {
                 if (GUI.Button(new Rect(w - 110f, 6f, 104f, 24f), "Show panels")) PanelsHidden = false;
-                return;
             }
-            if (Session != null) _hud.Draw(new Rect(0f, 0f, AnalyzerHud.Width, h), Session, _input);
-            if (_panelVisible) _panel.Draw(new Rect(w - LabPanel.Width, 0f, LabPanel.Width, h), this);
+            else
+            {
+                if (Session != null) _hud.Draw(new Rect(0f, 0f, AnalyzerHud.Width, h), Session, _input);
+                if (_panelVisible) _panel.Draw(new Rect(w - LabPanel.Width, 0f, LabPanel.Width, h), this);
+            }
+            if (_menu.Open) _menu.Draw(w, h);
         }
 
         private bool OverGui(Vector2 guiPos)
@@ -333,6 +345,8 @@ namespace Contraption.Game
             depth = Mathf.Max(depth, Vector3.Dot(b.max - cam.position, cam.forward));
             return depth + 0.3f;
         }
+
+        private void OnDestroy() => Time.timeScale = 1f;
 
         private void LateUpdate()
         {
