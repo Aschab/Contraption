@@ -18,6 +18,7 @@ namespace Contraption.Game
         private Vector3 _origin;
         private readonly List<LiquidContainerView> _tubes = new();
         private readonly List<Vector3> _rest = new();
+        private readonly List<bool> _loaded = new();
         private MachineSession _session;
 
         public SampleRack(MachineKit kit, Transform parent, Vector3 leftmostRack)
@@ -42,6 +43,7 @@ namespace Contraption.Game
             for (int i = _root.childCount - 1; i >= 0; i--) UnityEngine.Object.Destroy(_root.GetChild(i).gameObject);
             _tubes.Clear();
             _rest.Clear();
+            _loaded.Clear();
             var look = _kit.DefaultLook();
             var pool = session.Definition.InputPool;
             for (int r = 0; r * PerRack < pool.Count; r++)
@@ -54,6 +56,7 @@ namespace Contraption.Game
                     var pos = _root.InverseTransformPoint(slot.position);
                     var tube = LiquidContainerView.Create(_kit, look, _root, "Sample_Tube", pos);
                     tube.Brightness = 0.35f;   // dimmer than the machine's tanks so the tags stay readable
+                    tube.Audible = false;
                     tube.Show(pool[i]);
                     tube.SetFill(1f, 0f);
                     DrawTag(tube.transform, look.Panel, i);
@@ -63,6 +66,7 @@ namespace Contraption.Game
                     tube.gameObject.AddComponent<SampleTubeMarker>().Index = i;
                     _tubes.Add(tube);
                     _rest.Add(pos);
+                    _loaded.Add(Array.IndexOf(session.SelectedInputs, i) >= 0);
                 }
             }
         }
@@ -82,6 +86,8 @@ namespace Contraption.Game
             {
                 bool loaded = Array.IndexOf(_session.SelectedInputs, i) >= 0;
                 var t = _tubes[i].transform;
+                if (loaded != _loaded[i]) Sfx.Play(loaded ? "tube_lift" : "tube_drop", t.position);
+                _loaded[i] = loaded;
                 var target = _rest[i] + (loaded ? new Vector3(0f, 0.07f, 0f) : Vector3.zero);
                 t.localPosition = Vector3.MoveTowards(t.localPosition, target, Time.deltaTime * 0.6f);
             }
@@ -92,7 +98,9 @@ namespace Contraption.Game
             if (overGui(new Vector2(p.x, Screen.height - p.y))) return;
             if (!Physics.Raycast(cam.ScreenPointToRay(p), out var hit, 100f)) return;
             var marker = hit.collider.GetComponent<SampleTubeMarker>();
-            if (marker != null) _session.SelectInput(activePort, marker.Index);
+            if (marker == null) return;
+            if (_session.SelectedInputs[activePort] == marker.Index) Sfx.Play("tube_clink", hit.point);
+            _session.SelectInput(activePort, marker.Index);
         }
     }
 }

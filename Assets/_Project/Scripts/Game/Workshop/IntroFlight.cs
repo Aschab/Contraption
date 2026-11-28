@@ -20,6 +20,7 @@ namespace Contraption.Game
             f._cam = cam;
             f._end = end;
             f._onDone = onDone;
+            Sfx.Play("intro_whoosh", null, 0.8f);
             return f;
         }
 
@@ -41,6 +42,7 @@ namespace Contraption.Game
             _cam.transform.position = pos;
             _cam.transform.rotation = Quaternion.LookRotation(look - pos);
             if (_t < Duration) return;
+            Sfx.Play("intro_land");
             _onDone?.Invoke();
             Destroy(this);
         }

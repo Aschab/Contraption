@@ -55,3 +55,9 @@ Focus (arrows / d-pad / mouse hover) reaches controls, the test trigger and disp
 - **Liquid readability (bands)**: colour = hue; viscosity = surface wobble, drain speed, stream width; temperature 0 ice cubes, 1 cold mist, 3 steam, 4 boiling; flammability 2 sparks, 3 flames, 4 big flames; refraction = see-through distortion and gloss, 3 glow light, 4 glints. Exact values stay on the analyzer.
 - **Colour schemes** per machine (saved): frame, trim, panel + two alt panel tints, metal, 1–2 glow colours; parts and fillers pick a tint and a glow. Style target: Share/t1–t4 (chamfered cream panels with rivets, diamond studs, octagonal gems, warm workshop, bloom).
 - Tests animate (~1.5 s) and can be skipped with any input or turned off.
+
+## Audio
+- Every player action has its own sound: each control kind (lever up ≠ down, dial wrap ≠ click, refused move), the test run (trigger, drain, vials, splash, pour), the result (match / mismatch / untested inputs / seal / machine fixed), display changes, focus/magnify, turning, the rear light, tubes, books, undo/reset, intro.
+- One-shots have 3 variations; playback picks a random one (never the same twice running) with a slight pitch wobble; each control has its own pitch. Liquids sound their traits (cold, steam, boil, flames, sparks, glints) while visible.
+- Effects are synthesised by `ArtSource/Audio/synth_sfx.py` into `Resources/Audio/Sfx`; ambience loops (workshop room tone, machine idle, lamps) come from Suno.
+

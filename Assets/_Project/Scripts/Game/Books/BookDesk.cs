@@ -59,7 +59,11 @@ namespace Contraption.Game
             {
                 bool added = _session.Log.Count > _drawnLogCount;
                 _selected = Mathf.Min(_selected, _session.Log.Count - 1);
-                if (added) _log.ShowSpread(LastSpread());
+                if (added)
+                {
+                    _log.ShowSpread(LastSpread());
+                    Sfx.PlayDelayed(_log, 0.5f, "log_write", _log.transform.position, 0.8f);
+                }
                 else _log.Redraw();
             }
             if (verified != _drawnVerified) _manual.Redraw();
@@ -126,7 +130,7 @@ namespace Contraption.Game
             if (book != _manual && book != _log) return;
             if (mouse.rightButton.wasPressedThisFrame) { if (book.Held) Toggle(book); }
             else if (!book.Held) Toggle(book);
-            else book.Turn(book.SideOf(hit.point));
+            else TurnPage(book, book.SideOf(hit.point));
         }
 
         public void Open(int side)
@@ -141,7 +145,7 @@ namespace Contraption.Game
             bool towardMachine = _active == _manual ? dir > 0 : dir < 0;
             int next = _active.Spread + dir;
             if (towardMachine && (next < 0 || next >= _active.SpreadCount)) Toggle(_active);
-            else _active.Turn(dir);
+            else TurnPage(_active, dir);
         }
 
         private Vector2Int _lastStick;
@@ -155,10 +159,15 @@ namespace Contraption.Game
             return fresh ? dir : Vector2Int.zero;
         }
 
+        private static void TurnPage(BookView book, int dir) =>
+            Sfx.Play(book.Turn(dir) ? "page_turn" : "book_end", book.transform.position);
+
         // Only one book is up at a time.
         private void Toggle(BookView book)
         {
             bool up = !book.Held;
+            if (_active != null && _active != book) Sfx.Play("book_down", _active.transform.position);
+            Sfx.Play(up ? "book_lift" : "book_down", book.transform.position);
             _manual.SetHeld(up && book == _manual);
             _log.SetHeld(up && book == _log);
             _active = up ? book : null;
@@ -170,12 +179,14 @@ namespace Contraption.Game
             int first = _log.Spread * 2 * PerPage, last = Mathf.Min(_session.Log.Count, first + 2 * PerPage) - 1;
             _selected = _selected < first || _selected > last ? (dir > 0 ? first : last) : Mathf.Clamp(_selected + dir, first, last);
             _log.Redraw();
+            Sfx.Play("log_select", _log.transform.position);
         }
 
         private void DeleteSelected()
         {
             if (_selected < 0 || _selected >= _session.Log.Count) return;
             _session.DeleteLog(_selected);
+            Sfx.Play("log_delete", _log.transform.position);
         }
 
         // ---------------------------------------------------------------- drawing

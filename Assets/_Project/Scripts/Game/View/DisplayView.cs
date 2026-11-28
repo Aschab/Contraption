@@ -32,6 +32,7 @@ namespace Contraption.Game
         private Vector3 _needleAxis, _needleMin, _needleMax;
         private bool _linear;
         private float _needleAngle, _needleTarget;
+        private int _shown = int.MinValue;
 
         public static DisplayView Create(MachineKit kit, Look look, Transform machine, Vector3 pos, DisplayDef def, Placement p, GlyphSet glyphs)
         {
@@ -98,6 +99,18 @@ namespace Contraption.Game
             Art.Paint(_cursor, _look.Glow, _look.Glow * 1.5f);
         }
 
+        private void Sound(bool up)
+        {
+            string name = _def.Kind switch
+            {
+                DisplayKind.Light => up ? "disp_light_on" : "disp_light_off",
+                DisplayKind.Bar => up ? "disp_bar_up" : "disp_bar_down",
+                DisplayKind.Gauge => "disp_gauge_move",
+                _ => _script ? "disp_script_type" : "disp_glyph_change",
+            };
+            Sfx.Play(name, transform.position, 0.8f);
+        }
+
         public void SetFocused(bool focused) => _focusFrame.SetActive(focused);
 
         private static GameObject FocusFrame(Transform parent, float w, float h, Color glow)
@@ -134,6 +147,10 @@ namespace Contraption.Game
         public void Show(int[] state, bool instant)
         {
             int value = MachineRules.DisplayValue(_def, state);
+            int reading = _def.Kind == DisplayKind.Light ? (MachineRules.LightOn(_def, state) ? 1 : 0)
+                : _def.Kind == DisplayKind.Bar ? MachineRules.Readout(_def, state) : value;
+            if (!instant && _shown != int.MinValue && reading != _shown) Sound(reading > _shown);
+            _shown = reading;
             MachineRules.DisplayRange(_def, out int min, out int max);
             float norm = max > min ? (value - min) / (float)(max - min) : 0f;
             Color on = _look.Glow, off = _look.Dark * 1.6f;

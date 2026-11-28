@@ -82,12 +82,12 @@ namespace Contraption.Game
                 if (kb.aKey.wasPressedThisFrame) Turn(s, v, Vector2Int.left);
                 if (kb.dKey.wasPressedThisFrame) Turn(s, v, Vector2Int.right);
                 if (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame) Use(s, v, v.Focus);
-                if (kb.zKey.wasPressedThisFrame) s.Undo();
-                if (kb.rKey.wasPressedThisFrame) s.Reset();
+                if (kb.zKey.wasPressedThisFrame) Undo(s);
+                if (kb.rKey.wasPressedThisFrame) Reset(s);
                 if (kb.tKey.wasPressedThisFrame) s.Test();
                 if (kb.leftBracketKey.wasPressedThisFrame) CycleInput(s, -1);
                 if (kb.rightBracketKey.wasPressedThisFrame) CycleInput(s, 1);
-                if (kb.tabKey.wasPressedThisFrame) ActivePort = (ActivePort + 1) % s.Definition.InputPorts;
+                if (kb.tabKey.wasPressedThisFrame) SwitchPort(s);
             }
 
             var pad = Gamepad.current;
@@ -102,12 +102,12 @@ namespace Contraption.Game
                 var right = Flick(pad.rightStick.ReadValue(), ref _lastRight);
                 if (right != Vector2Int.zero) Turn(s, v, right);
                 if (pad.buttonSouth.wasPressedThisFrame) Use(s, v, v.Focus);
-                if (pad.buttonWest.wasPressedThisFrame) s.Undo();
-                if (pad.buttonNorth.wasPressedThisFrame) s.Reset();
+                if (pad.buttonWest.wasPressedThisFrame) Undo(s);
+                if (pad.buttonNorth.wasPressedThisFrame) Reset(s);
                 if (pad.buttonEast.wasPressedThisFrame && arrowsFree) s.Test();   // with a book up, B puts it down
                 if (pad.leftShoulder.wasPressedThisFrame) CycleInput(s, -1);
                 if (pad.rightShoulder.wasPressedThisFrame) CycleInput(s, 1);
-                if (pad.selectButton.wasPressedThisFrame) ActivePort = (ActivePort + 1) % s.Definition.InputPorts;
+                if (pad.selectButton.wasPressedThisFrame) SwitchPort(s);
             }
         }
 
@@ -168,7 +168,27 @@ namespace Contraption.Game
 
         private static void Do(MachineSession s, MachineView v, int c, ActionKind a)
         {
-            if (s.Apply(new Move(c, a))) v.Pulse(c);
+            int slot = s.Definition.ControlSlot(c), before = s.State[slot];
+            if (s.Apply(new Move(c, a)))
+            {
+                v.Pulse(c);
+                v.PlayControl(c, a, before, s.State[slot]);
+            }
+            else v.PlayBlocked(c);
+        }
+
+        private static void Undo(MachineSession s) => Sfx.Play(s.Undo() ? "undo" : "ctl_blocked");
+
+        private static void Reset(MachineSession s)
+        {
+            s.Reset();
+            Sfx.Play("reset");
+        }
+
+        private void SwitchPort(MachineSession s)
+        {
+            ActivePort = (ActivePort + 1) % s.Definition.InputPorts;
+            Sfx.Play("port_switch");
         }
     }
 }

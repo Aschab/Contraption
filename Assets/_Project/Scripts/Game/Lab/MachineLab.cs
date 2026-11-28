@@ -74,7 +74,11 @@ namespace Contraption.Game
             if (_intro != null) return;
             _blur = 0f;
             Stage.SetFocus(0f, 0f);
-            _intro = IntroFlight.Play(_camera, TableView, () => _intro = null);
+            _intro = IntroFlight.Play(_camera, TableView, () =>
+            {
+                _intro = null;
+                Sfx.PlayDelayed(this, 0.3f, "level_start");
+            });
         }
 
         private void Update()
@@ -181,6 +185,7 @@ namespace Contraption.Game
             _desk.Bind(Session);
             _rack.Bind(Session);
             Frame();
+            if (_intro == null && Time.timeSinceLevelLoad > 1f) Sfx.Play("level_start");
         }
 
         public void SetKit(int index)

@@ -15,6 +15,7 @@ namespace Contraption.Game
         private Vector3[][] _links;
         private Vector3 _start, _end;
         private Transform _bead;
+        private AudioSource _hum;
         private Coroutine _pulse;
 
         // Rear node of a display: centre and size in machine space (z is ignored; the rear face is at `back`).
@@ -93,6 +94,7 @@ namespace Contraption.Game
             Art.Paint(bead.GetComponent<Renderer>(), look.Glow, look.Glow * 4f);
             bead.SetActive(false);
             v._bead = bead.transform;
+            v._hum = Sfx.Loop("cable_travel", bead.transform, Vector3.zero, 0.5f);
             return v;
         }
 
@@ -164,10 +166,12 @@ namespace Contraption.Game
         // The light swells on the start badge (the inputs), travels the cables, and swells again on the end badge.
         private IEnumerator Run()
         {
+            Sfx.Play("cable_start", _bead.parent.TransformPoint(_start));
             yield return Swell(_start);
             foreach (var path in _links)
             {
                 _bead.gameObject.SetActive(path != null);
+                if (_hum != null) { if (path != null) _hum.Play(); else _hum.Stop(); }
                 for (float t = 0f; t < LinkTime; t += Time.deltaTime)
                 {
                     if (path != null)
@@ -178,7 +182,10 @@ namespace Contraption.Game
                     }
                     yield return null;
                 }
+                if (path != null) Sfx.Play("cable_node", _bead.position, 0.7f);
             }
+            if (_hum != null) _hum.Stop();
+            Sfx.Play("cable_end", _bead.parent.TransformPoint(_end));
             yield return Swell(_end);
             _bead.gameObject.SetActive(false);
             _pulse = null;

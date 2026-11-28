@@ -36,6 +36,13 @@ namespace Contraption.Game
         private readonly List<Transform> _parts = new();
         private readonly List<Vector3> _homes = new();
         private readonly List<float> _mag = new();
+        // Sound: last focus (no tick on rebuilds), verified entries before the latest test, the pending result.
+        private int _lastFocus = -1;
+        private bool[] _verifiedBefore = new bool[0];
+        private string _result;
+        private bool _seal;
+        private string _triggerSound = "test_plunger";
+        private AudioSource _drain, _pour;
         private Vector3 _pivot;
         private float _turn;
 
@@ -111,6 +118,8 @@ namespace Contraption.Game
             BuildTops(rng, freeTops);
             BuildOutput(def);
             BuildPlates(def);
+            if (_inputs.Count > 0) _drain = Sfx.Loop("liquid_drain", _root, _inputs[0].transform.localPosition, 0.7f);
+            _pour = Sfx.Loop("liquid_pour", _root, _output.transform.localPosition, 0.7f);
             _back = def.Hints != null && def.Hints.Back ? BuildBack(def) : null;
 
             UpdateBounds();
@@ -120,6 +129,8 @@ namespace Contraption.Game
             _turn = ShowingBack ? 1f : 0f;
             ApplyTurn();
             Focus = 0;
+            _lastFocus = -1;
+            _result = null;
             _session.Changed += Refresh;
             _session.Tested += OnTested;
             Refresh(true);
@@ -170,7 +181,9 @@ namespace Contraption.Game
 
         public void Turn()
         {
-            if (_back != null) ShowingBack = !ShowingBack;
+            if (_back == null) return;
+            ShowingBack = !ShowingBack;
+            Sfx.Play("machine_turn", transform.position);
         }
 
         private void AddPart(Transform t)
@@ -187,6 +200,7 @@ namespace Contraption.Game
             {
                 _turn = Mathf.MoveTowards(_turn, ShowingBack ? 1f : 0f, Time.deltaTime / 0.9f);
                 ApplyTurn();
+                if (!Turning) Sfx.Play("machine_turn_end", transform.position);
             }
             Magnify();
         }
@@ -296,12 +310,14 @@ namespace Contraption.Game
             if (_layout.TestStyle != "Test_Lever" && free.Count >= 2)
             {
                 _trigger = TestTriggerView.Create(_kit, _look, _root, _layout.TestStyle, new Vector3(ColumnX(free[0]), TopY(free[0]), 0f));
+                _triggerSound = "test_plunger";
                 free.RemoveAt(0);
             }
             else
             {
                 int row = Mathf.Min(_layout.TopOf(0), 1);
                 _trigger = TestTriggerView.Create(_kit, _look, _root, "Test_Lever", new Vector3(GridX(0) - 0.02f, _baseH + (row + 0.5f) * Cell, 0.25f));
+                _triggerSound = "test_lever";
             }
             rng.Shuffle(free);
             // The "fixed" lamp lives on the rightmost free top.
@@ -343,6 +359,7 @@ namespace Contraption.Game
                     float y = col % 2 == 0 ? top - row * VialStep : top - (perCol - 1 - row) * VialStep;
                     var pos = new Vector3(x + col * 0.7f, y, VialZ);
                     var vial = LiquidContainerView.Create(_kit, _look, _root, "Vial", pos);
+                    vial.Audible = false;
                     _vials.Add(vial);
                     Route(prev, new Vector3(pos.x, pos.y, PipeZ));
                     prev = new Vector3(pos.x, pos.y, PipeZ);
@@ -438,7 +455,33 @@ namespace Contraption.Game
             for (int i = 0; i < _controls.Count; i++) _controls[i].SetFocused(i == Focus);
             _trigger.SetFocused(TriggerFocused);
             for (int i = 0; i < _displays.Count; i++) _displays[i].SetFocused(Focus == _controls.Count + 1 + i);
+            if (_lastFocus >= 0 && _lastFocus != Focus)
+            {
+                bool magnifies = Accessibility.MagnifyFocus && !TriggerFocused && !ShowingBack;
+                Sfx.Play(magnifies ? "magnify_in" : "focus_move", FocusWorld, magnifies ? 0.8f : 1f);
+            }
+            _lastFocus = Focus;
         }
+
+        private Vector3 FocusWorld => Focus < _controls.Count ? _controls[Focus].transform.position
+            : TriggerFocused ? _trigger.transform.position : _displays[Focus - _controls.Count - 1].transform.position;
+
+        // Each control gets its own pitch so two buttons on one machine sound different.
+        public void PlayControl(int c, ActionKind a, int before, int after)
+        {
+            var def = _session.Definition.Controls[c];
+            string name = def.Kind switch
+            {
+                ControlKind.Button => "ctl_button",
+                ControlKind.Lever => after > before ? "ctl_lever_up" : "ctl_lever_down",
+                ControlKind.Dial => (a == ActionKind.Increment) == (after < before) ? "ctl_dial_wrap" : "ctl_dial_click",
+                ControlKind.Knob => _layout.Controls[c].Style.StartsWith("Ctl_Slider") ? "ctl_slider_step" : "ctl_knob_click",
+                _ => a == ActionKind.Center ? "ctl_joystick_center" : "ctl_joystick_push",
+            };
+            Sfx.Play(name, _controls[c].transform.position, 1f, 1f + (c * 37 % 9 - 4) * 0.025f);
+        }
+
+        public void PlayBlocked(int c) => Sfx.Play("ctl_blocked", c < _controls.Count ? _controls[c].transform.position : transform.position);
 
         // Resting positions, so a magnified part doesn't skew navigation.
         private Vector2 FocusPosition(int i) =>
@@ -481,7 +524,7 @@ namespace Contraption.Game
             bool stale = outputShown && (_session.LastOutput == null || !SameInputs());
             if (stale || !outputShown)
             {
-                if (stale) Skip();
+                if (stale) Skip(false);
                 _testedInputs = null;
                 for (int p = 0; p < _inputs.Count; p++)
                 {
@@ -492,6 +535,7 @@ namespace Contraption.Game
                 foreach (var v in _vials) v.SetFill(0f, instant ? 0f : 0.25f);
             }
 
+            _verifiedBefore = (bool[])_session.Verified.Clone();
             bool solved = _session.Solved;
             if (_fixedLamp != null) Art.Paint(_fixedLamp, solved ? Color.green : _look.Dark * 1.6f, solved ? Color.green * 3f : Color.black, 0.9f);
             SetFocus(Focus);
@@ -512,6 +556,9 @@ namespace Contraption.Game
             _stages = MachineRules.Stages(def, _session.CopyState(), inputs);
             _testedInputs = (int[])_session.SelectedInputs.Clone();
             _trigger.Play();
+            PrepareResult();
+            Sfx.Play(_triggerSound, _trigger.transform.position);
+            Sfx.Play("machine_start", transform.position, 0.5f);
             if (_back != null) _back.Pulse();
             if (_play != null) StopCoroutine(_play);
             _play = null;
@@ -530,12 +577,16 @@ namespace Contraption.Game
             foreach (var l in inputs) vis += l.Viscosity;
             float drain = Mathf.Lerp(0.45f, 0.9f, vis / (float)(Values.Max * inputs.Count));
             foreach (var c in _inputs) c.SetFill(0f, drain);
+            if (_drain != null) { _drain.pitch = Mathf.Lerp(1.15f, 0.8f, vis / (float)(Values.Max * inputs.Count)); _drain.Play(); }
+            Sfx.Play("liquid_gurgle", transform.position, 0.7f);
             yield return new WaitForSeconds(drain);
+            if (_drain != null) _drain.Stop();
 
             for (int i = 0; i < _vials.Count; i++)
             {
                 _vials[i].Show(_stages[i]);
                 _vials[i].SetFill(1f, 0.18f);
+                Sfx.Play("vial_fill", _vials[i].transform.position, 0.6f);
                 yield return new WaitForSeconds(0.14f);
             }
 
@@ -544,26 +595,56 @@ namespace Contraption.Game
             float fill = Mathf.Lerp(0.5f, 0.9f, output.Viscosity / (float)Values.Max);
             _output.SetFill(1f, fill);
             ShowStream(output);
+            Sfx.Play("liquid_splash", _output.transform.position, 0.8f);
+            if (_pour != null) _pour.Play();
             for (float t = 0f; t < fill; t += Time.deltaTime)
             {
                 PlaceStream(output);
                 yield return null;
             }
             _stream.gameObject.SetActive(false);
+            if (_pour != null) _pour.Stop();
             _play = null;
+            PlayResult();
         }
 
         // Jumps to the end of the current test animation.
-        public void Skip()
+        public void Skip() => Skip(true);
+
+        private void Skip(bool sound)
         {
             if (_play == null) return;
             StopCoroutine(_play);
             _play = null;
+            if (sound) Sfx.Play("test_skip");
+            else _result = null;
             Finish();
+        }
+
+        // match / mismatch / no manual entry for these inputs; the machine-fixed fanfare replaces the last match.
+        private void PrepareResult()
+        {
+            var record = _session.Log[_session.Log.Count - 1];
+            int e = _session.ManualEntryFor(record);
+            bool wasFixed = _verifiedBefore.Length > 0 && System.Array.TrueForAll(_verifiedBefore, v => v);
+            bool ok = e >= 0 && _session.Verified[e];
+            _result = _session.Solved && !wasFixed ? "machine_fixed" : e < 0 ? "result_new" : ok ? "result_match" : "result_mismatch";
+            _seal = ok && (e >= _verifiedBefore.Length || !_verifiedBefore[e]);
+        }
+
+        private void PlayResult()
+        {
+            if (_result == null) return;
+            Sfx.Play(_result);
+            if (_seal) Sfx.PlayDelayed(this, 0.35f, "seal_stamp");
+            _result = null;
         }
 
         private void Finish()
         {
+            if (_drain != null) _drain.Stop();
+            if (_pour != null) _pour.Stop();
+            PlayResult();
             foreach (var c in _inputs) c.SetFill(0f, 0f);
             for (int i = 0; i < _vials.Count; i++)
             {
