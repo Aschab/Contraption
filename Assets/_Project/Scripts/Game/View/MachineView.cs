@@ -42,7 +42,7 @@ namespace Contraption.Game
         private string _result;
         private bool _seal;
         private string _triggerSound = "test_plunger";
-        private AudioSource _drain, _pour;
+        private AudioSource _drain, _pour, _idle;
         private Vector3 _pivot;
         private float _turn;
 
@@ -120,6 +120,8 @@ namespace Contraption.Game
             BuildPlates(def);
             if (_inputs.Count > 0) _drain = Sfx.Loop("liquid_drain", _root, _inputs[0].transform.localPosition, 0.7f);
             _pour = Sfx.Loop("liquid_pour", _root, _output.transform.localPosition, 0.7f);
+            _idle = Sfx.Loop("machine_idle", _root, new Vector3(0f, _baseH + _layout.Rows * Cell / 2f, 0f), 0.35f);
+            if (_idle != null) { _idle.time = Random.Range(0f, _idle.clip.length); _idle.Play(); }
             _back = def.Hints != null && def.Hints.Back ? BuildBack(def) : null;
 
             UpdateBounds();
@@ -537,6 +539,8 @@ namespace Contraption.Game
 
             _verifiedBefore = (bool[])_session.Verified.Clone();
             bool solved = _session.Solved;
+            // A fixed machine idles calmer.
+            if (_idle != null) { _idle.volume = solved ? 0.15f : 0.35f; _idle.pitch = solved ? 0.92f : 1f; }
             if (_fixedLamp != null) Art.Paint(_fixedLamp, solved ? Color.green : _look.Dark * 1.6f, solved ? Color.green * 3f : Color.black, 0.9f);
             SetFocus(Focus);
         }

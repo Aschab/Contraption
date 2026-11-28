@@ -3,9 +3,9 @@ using UnityEngine;
 
 namespace Contraption.Game
 {
-    // Sound effects from Resources/Audio/Sfx (made by ArtSource/Audio/synth_sfx.py). One-shots come as variations
-    // "<name>_<i>": each play picks a random one (never the same twice in a row) with a slight pitch wobble.
-    // Loops are a single "<name>" clip.
+    // Sound effects from Resources/Audio/Sfx (made by ArtSource/Audio/synth_sfx.py) and ambience loops from
+    // Resources/Audio/Ambience (Suno). One-shots come as variations "<name>_<i>": each play picks a random one
+    // (never the same twice in a row) with a slight pitch wobble. Loops are a single "<name>" clip.
     public static class Sfx
     {
         public static float Volume = 1f;
@@ -66,6 +66,18 @@ namespace Contraption.Game
             return src;
         }
 
+        // A non-positional loop that plays for the whole scene (room tone).
+        public static AudioSource Ambient(string name, float volume)
+        {
+            Init();
+            var src = Loop(name, _voices[0].transform.parent, Vector3.zero, volume);
+            if (src == null) return null;
+            src.spatialBlend = 0f;
+            src.time = Random.Range(0f, src.clip.length);
+            src.Play();
+            return src;
+        }
+
         private static bool TryGet(string name, out AudioClip[] set)
         {
             Init();
@@ -81,7 +93,7 @@ namespace Contraption.Game
             if (_sets == null)
             {
                 var groups = new Dictionary<string, List<AudioClip>>();
-                foreach (var clip in Resources.LoadAll<AudioClip>("Audio/Sfx"))
+                foreach (var clip in Resources.LoadAll<AudioClip>("Audio"))
                 {
                     string n = clip.name;
                     int u = n.LastIndexOf('_');
