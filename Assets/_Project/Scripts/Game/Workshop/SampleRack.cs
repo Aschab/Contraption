@@ -70,12 +70,18 @@ namespace Contraption.Game
             }
         }
 
+        // A paper card a little larger than the modelled tag, with a big, thick, coloured symbol, drawn over the
+        // tube's glow (Art.Overlay) so it reads at table distance.
         private static void DrawTag(Transform tube, Color paper, int index)
         {
             var face = MachineKit.Find(tube, "TagFace");
             var content = new GameObject("Tag").transform;
             content.SetParent(face, false);
-            new PageDrawer(content, paper).SampleSymbol(Vector2.zero, 0.052f, index, PageDrawer.Ink, 0.0065f);
+            var d = new PageDrawer(content, paper);
+            d.Rect(new Vector2(0f, 0.004f), new Vector2(0.115f, 0.092f), paper * 0.88f, 1);
+            d.Disc(new Vector2(0f, 0.038f), 0.005f, PageDrawer.Ink, 2);
+            d.SampleSymbol(new Vector2(0f, -0.002f), 0.066f, index, PageDrawer.SampleInk(index), 0.011f, 3);
+            Art.Overlay(content);
         }
 
         public void Tick(Camera cam, Func<Vector2, bool> overGui, int activePort)

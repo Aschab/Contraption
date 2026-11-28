@@ -6,8 +6,9 @@ using UnityEngine.InputSystem;
 namespace Contraption.Game
 {
     // The manual (left) and the logbook (right) on the table; one of them can be lifted into view at a time.
-    // Manual: up to four examples per page (inputs → expected output), vertically centred, sealed once proven.
+    // Manual: up to four examples per page (inputs → expected output), vertically centred.
     // Logbook: every test as IN rows + OUT row; OUT cells that differ from the manual's answer for the same inputs are orange.
+    // A new test is written in once the machine has finished running it (WriteLog): the logbook hops, a page turns, the pen scratches.
     // Keys: Q manual, E logbook (look / put down), ←→ turn the book in view (past its last page, back toward the machine, puts it down),
     // ↑↓ pick a log entry, Delete removes it, Esc puts it down. Focus moved off the machine's left/right edge lifts a book (Open).
     // Gamepad: LT manual, RT logbook, d-pad/left stick as arrows while a book is up, B puts it down, right-stick press deletes. Mouse: click a book to pick it up,
@@ -21,7 +22,6 @@ namespace Contraption.Game
         private MachineSession _session;
         private BookView _active;
         private int _selected = -1, _drawnLogCount = -1;
-        private string _drawnVerified = "";
 
         public bool CapturesArrows => _active != null && _active.Held;
         // -1 manual in view (left), +1 logbook in view (right), 0 none.
@@ -52,28 +52,35 @@ namespace Contraption.Game
             Snapshot();
         }
 
+        // New entries wait for WriteLog; deletions show at once.
         private void OnChanged()
         {
-            string verified = string.Join(",", _session.Verified);
-            if (_session.Log.Count != _drawnLogCount)
+            if (_session.Log.Count < _drawnLogCount)
             {
-                bool added = _session.Log.Count > _drawnLogCount;
                 _selected = Mathf.Min(_selected, _session.Log.Count - 1);
-                if (added)
-                {
-                    _log.ShowSpread(LastSpread());
-                    Sfx.PlayDelayed(_log, 0.5f, "log_write", _log.transform.position, 0.8f);
-                }
-                else _log.Redraw();
+                _log.Redraw();
+                Snapshot();
             }
-            if (verified != _drawnVerified) _manual.Redraw();
-            Snapshot();
         }
 
-        private void Snapshot()
+        private void Snapshot() => _drawnLogCount = _session.Log.Count;
+
+        public void WriteLog()
         {
-            _drawnLogCount = _session.Log.Count;
-            _drawnVerified = string.Join(",", _session.Verified);
+            if (_session == null || _session.Log.Count == _drawnLogCount) return;
+            Snapshot();
+            _log.StopAllCoroutines();
+            _log.StartCoroutine(Write());
+        }
+
+        private System.Collections.IEnumerator Write()
+        {
+            int target = LastSpread();
+            _log.Hop();
+            _log.FlipTo(target, target >= _log.Spread ? 1 : -1);
+            Sfx.Play("page_turn", _log.transform.position);
+            yield return new WaitForSeconds(0.3f);
+            _log.Scribble(Sfx.Play("log_write", _log.transform.position, 0.8f));
         }
 
         private int LastSpread() => Mathf.Max(0, (_log.PageCount() - 1) / 2);
@@ -258,20 +265,12 @@ namespace Contraption.Game
                 int e = first + k;
                 var entry = def.Manual[e];
                 var inputs = entry.Inputs.ToArray();
-                float outY = Entry(d, y, inputs, System.Array.ConvertAll(inputs, l => def.InputPool.IndexOf(l)), entry.Output, null);
-                if (_session.Verified[e])
-                {
-                    var seal = new Vector2(PageW / 2f - 0.016f, outY);
-                    d.Disc(seal, 0.013f, PageDrawer.Seal, 3);
-                    d.Symbol(seal, 0.012f, SealMark, new Color(0.35f, 0.04f, 0.03f), 0.0025f);
-                }
+                Entry(d, y, inputs, System.Array.ConvertAll(inputs, l => def.InputPool.IndexOf(l)), entry.Output, null);
                 y -= h;
                 if (k < count - 1) Separator(d, y - Gap / 2f);
                 y -= Gap;
             }
         }
-
-        private static readonly int SealMark = Glyphs.MakeRunes(0x5EA1UL, 1, 4, 5)[0];
 
         // Tests fill the page from the top, oldest first.
         private void DrawLogPage(PageDrawer d, int page)

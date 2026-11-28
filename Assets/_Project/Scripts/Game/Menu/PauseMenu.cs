@@ -7,7 +7,7 @@ namespace Contraption.Game
     // Keys: ↑↓ choose, ←→ change, Enter/Space activate. Gamepad: d-pad/left stick, A activate, B/Start close. Mouse works too.
     public sealed class PauseMenu
     {
-        private enum Item { Resume, Master, Effects, Ambience, Music, Magnify, AnimateTests, Quit }
+        private enum Item { Resume, Master, Effects, Ambience, Music, Magnify, Quick, AnimateTests, Quit }
         private static readonly Item[] Items = (Item[])System.Enum.GetValues(typeof(Item));
         private const float Step = 0.1f;
 
@@ -73,6 +73,7 @@ namespace Contraption.Game
                 case Item.Ambience: SoundSettings.Ambience += dir * Step; break;
                 case Item.Music: SoundSettings.Music += dir * Step; break;
                 case Item.Magnify:
+                case Item.Quick:
                 case Item.AnimateTests: Activate(item); break;
             }
         }
@@ -83,6 +84,7 @@ namespace Contraption.Game
             {
                 case Item.Resume: Toggle(); break;
                 case Item.Magnify: Accessibility.MagnifyFocus = !Accessibility.MagnifyFocus; Sfx.Play("ctl_lever_up"); break;
+                case Item.Quick: Accessibility.Quick = !Accessibility.Quick; Sfx.Play("ctl_lever_up"); break;
                 case Item.AnimateTests: MachineView.AnimateTests = !MachineView.AnimateTests; Sfx.Play("ctl_lever_up"); break;
                 case Item.Quit:
                     Time.timeScale = 1f;
@@ -134,6 +136,9 @@ namespace Contraption.Game
                     break;
                 case Item.Magnify:
                     Toggle(r, "Magnify the selected part (accessibility)", Accessibility.MagnifyFocus, () => Activate(item));
+                    break;
+                case Item.Quick:
+                    Toggle(r, "Quick displays (all at once, no sounds)", Accessibility.Quick, () => Activate(item));
                     break;
                 case Item.AnimateTests:
                     Toggle(r, "Animate tests", MachineView.AnimateTests, () => Activate(item));

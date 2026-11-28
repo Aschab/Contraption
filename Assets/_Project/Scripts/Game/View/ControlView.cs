@@ -125,6 +125,16 @@ namespace Contraption.Game
 
         public void Pulse() => _pressTimer = 0.15f;
 
+        // A click on a dial or knob turns it up on its upper half, down on its lower half; a slider moves toward the click.
+        public bool ClickIsUp(Vector3 worldPoint)
+        {
+            var p = transform.InverseTransformPoint(worldPoint);
+            if (!_slider) return p.y >= 0f;
+            var track = transform.InverseTransformPoint(_moving.parent.TransformPoint(_max)) - transform.InverseTransformPoint(_moving.parent.TransformPoint(_min));
+            var handle = transform.InverseTransformPoint(_moving.position);
+            return Vector2.Dot(p - handle, track) >= 0f;
+        }
+
         public void SetFocused(bool focused)
         {
             if (_frame != null) Art.Paint(_frame, focused ? _look.Glow : _look.Trim, focused ? _look.Glow * 0.8f : Color.black);

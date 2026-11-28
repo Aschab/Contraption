@@ -155,6 +155,18 @@ namespace Contraption.Game
             return path;
         }
 
+        public bool Running => _pulse != null;
+
+        public void Stop()
+        {
+            if (_pulse == null) return;
+            StopCoroutine(_pulse);
+            _pulse = null;
+            if (_hum != null) _hum.Stop();
+            _bead.gameObject.SetActive(false);
+            _bead.localScale = Vector3.one * CableWidth * 1.7f;
+        }
+
         // One pass of the bead from start to end, called when a test runs.
         public void Pulse()
         {
@@ -185,7 +197,6 @@ namespace Contraption.Game
                 if (path != null) Sfx.Play("cable_node", _bead.position, 0.7f);
             }
             if (_hum != null) _hum.Stop();
-            Sfx.Play("cable_end", _bead.parent.TransformPoint(_end));
             yield return Swell(_end);
             _bead.gameObject.SetActive(false);
             _pulse = null;

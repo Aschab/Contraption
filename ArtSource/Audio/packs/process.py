@@ -7,9 +7,8 @@ PROJ = "/Volumes/Arturonchis/superserious/Contraption/Assets/ThirdParty"
 PACK = {"U:": "UniversalSoundFX", "M:": "UltimateGameMusic"}
 LOOPS = {"cable_travel": ("Sfx", -30), "lamp_buzz": ("Ambience", -42), "machine_idle": ("Ambience", -34), "workshop_ambience": ("Ambience", -27)}
 PEAK = {"ctl_blocked": .6, "test_plunger": .85, "test_lever": .85, "machine_start": .6, "vial_fill": .5, "test_skip": .45,
-        "result_match": .7, "result_mismatch": .55, "result_new": .55, "seal_stamp": .8, "machine_fixed": .85,
-        "focus_move": .22, "magnify_in": .3, "magnify_out": .3, "machine_turn": .7, "machine_turn_end": .8,
-        "cable_start": .5, "cable_node": .45, "cable_end": .55, "port_switch": .55, "book_lift": .45, "book_down": .6,
+        "focus_move": .22, "magnify_in": .3, "magnify_out": .3, "machine_turn": .7,
+        "cable_start": .5, "cable_node": .45, "port_switch": .55, "book_lift": .45, "book_down": .6,
         "page_turn": .5, "book_end": .45, "log_write": .4, "log_select": .4, "log_delete": .4, "undo": .45, "reset": .6,
         "intro_whoosh": .5, "intro_land": .6, "level_start": .6}
 CAP = {"ctl_lever_up": .7, "ctl_lever_down": .7, "ctl_blocked": .5, "test_lever": .8, "disp_light_on": .5, "disp_light_off": .5,

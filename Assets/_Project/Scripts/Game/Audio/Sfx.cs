@@ -28,20 +28,32 @@ namespace Contraption.Game
         private static AudioSource[] _voices;
         private static int _next;
 
-        public static void Play(string name, Vector3? at = null, float volume = 1f, float pitch = 1f)
+        // Returns the clip's length in seconds (0 when nothing played).
+        public static float Play(string name, Vector3? at = null, float volume = 1f, float pitch = 1f) => Play(name, -1, at, volume, pitch);
+
+        // Always the same variation for the same `variant` and no pitch wobble: displays sound predictable.
+        public static float PlayFixed(string name, int variant, Vector3? at = null, float volume = 1f) => Play(name, Mathf.Max(0, variant), at, volume, 1f);
+
+        private static float Play(string name, int variant, Vector3? at, float volume, float pitch)
         {
-            if (!TryGet(name, out var set)) return;
+            if (!TryGet(name, out var set)) return 0f;
             // Many displays can change in one move: one sound per name per few frames.
             float now = Time.unscaledTime;
-            if (_lastTime.TryGetValue(name, out float t) && now - t < 0.04f) return;
+            if (variant < 0 && _lastTime.TryGetValue(name, out float t) && now - t < 0.04f) return 0f;
             _lastTime[name] = now;
 
             var usable = new List<int>();
             for (int k = 0; k < set.Length; k++) if (!SoundReview.IsPurged(set[k].name)) usable.Add(k);
-            if (usable.Count == 0) return;
-            if (usable.Count > 1 && _last.TryGetValue(name, out int prev)) usable.Remove(prev);
-            int i = usable[Random.Range(0, usable.Count)];
-            _last[name] = i;
+            if (usable.Count == 0) return 0f;
+            int i;
+            if (variant >= 0) i = usable[variant % usable.Count];
+            else
+            {
+                if (usable.Count > 1 && _last.TryGetValue(name, out int prev)) usable.Remove(prev);
+                i = usable[Random.Range(0, usable.Count)];
+                _last[name] = i;
+                pitch *= Random.Range(0.96f, 1.04f);
+            }
             Recent.Remove(set[i]);
             Recent.Insert(0, set[i]);
             if (Recent.Count > 20) Recent.RemoveAt(Recent.Count - 1);
@@ -51,8 +63,9 @@ namespace Contraption.Game
             src.spatialBlend = at.HasValue ? Spatial : 0f;
             src.clip = set[i];
             src.volume = volume * SoundSettings.Effects;
-            src.pitch = pitch * Random.Range(0.96f, 1.04f);
+            src.pitch = pitch;
             src.Play();
+            return set[i].length / pitch;
         }
 
         public static void Replay(AudioClip clip)

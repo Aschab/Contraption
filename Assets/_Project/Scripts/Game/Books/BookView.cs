@@ -15,6 +15,7 @@ namespace Contraption.Game
         private Quaternion _restRot;
         private float _hold, _holdTarget, _turn = 1f;
         private int _turnDir;
+        private float _hop = 1f, _scribble;
         private Transform _sheet;
 
         public PageDrawer Left { get; private set; }
@@ -83,14 +84,24 @@ namespace Contraption.Game
         {
             int next = Spread + dir;
             if (next < 0 || next >= SpreadCount || _turn < 1f) return false;
-            Spread = next;
+            FlipTo(next, dir);
+            return true;
+        }
+
+        // Turns a sheet and lands on `spread`, even when it is the one already showing (a page is turned to write on).
+        public void FlipTo(int spread, int dir)
+        {
+            Spread = Mathf.Clamp(spread, 0, SpreadCount - 1);
             _turnDir = dir;
             _turn = 0f;
             // The page under the turning sheet changes now, the other side when the sheet lands.
             DrawSide(dir > 0 ? Right : Left, dir > 0 ? Spread * 2 + 1 : Spread * 2);
             _sheet.gameObject.SetActive(true);
-            return true;
         }
+
+        // A little jump on the table, then a pen's jitter while an entry is written.
+        public void Hop() => _hop = 0f;
+        public void Scribble(float seconds) => _scribble = seconds;
 
         public void SetHeld(bool held) => _holdTarget = held ? 1f : 0f;
         public void Toggle() => SetHeld(!Held);
@@ -104,6 +115,18 @@ namespace Contraption.Game
             float k = Mathf.SmoothStep(0f, 1f, _hold);
             HeldPose(out var hp, out var hr);
             transform.SetPositionAndRotation(Vector3.Lerp(_restPos, hp, k), Quaternion.Slerp(_restRot, hr, k));
+            if (_hop < 1f)
+            {
+                _hop = Mathf.Min(1f, _hop + Time.deltaTime / 0.3f);
+                transform.position += Vector3.up * (0.03f * Mathf.Sin(_hop * Mathf.PI));
+            }
+            if (_scribble > 0f)
+            {
+                _scribble -= Time.deltaTime;
+                float t = Time.time * 30f;
+                transform.position += transform.right * (0.0025f * Mathf.Sin(t)) + transform.forward * (0.0015f * Mathf.Sin(t * 1.7f));
+                transform.rotation *= Quaternion.Euler(0f, 0.5f * Mathf.Sin(t * 0.8f), 0f);
+            }
 
             if (_turn < 1f)
             {

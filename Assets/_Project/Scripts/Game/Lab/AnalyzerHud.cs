@@ -40,6 +40,8 @@ namespace Contraption.Game
 
             GUILayout.EndScrollView();
             MachineView.AnimateTests = GUILayout.Toggle(MachineView.AnimateTests, "Animate tests (any key skips)");
+            bool quick = GUILayout.Toggle(Accessibility.Quick, "Quick displays (all at once, no sounds)");
+            if (quick != Accessibility.Quick) Accessibility.Quick = quick;
             bool magnify = GUILayout.Toggle(Accessibility.MagnifyFocus, "Magnify the selected part (accessibility)");
             if (magnify != Accessibility.MagnifyFocus) Accessibility.MagnifyFocus = magnify;
             GUILayout.Label("Arrows select (past the left/right edge: manual/logbook) · W/S (A/D) turn or push · Space use/centre\nZ undo · R reset · T test · Q manual · E logbook (pad: LT/RT) · F turn around (pad: R3)\nBook up: ←→ pages · ↑↓ entry · Del remove · Esc/B close\nEsc / pad B: deselect · Esc again / Start: menu (volumes, settings)");

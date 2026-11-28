@@ -43,3 +43,4 @@ Thumbs.db
 
 # Private references between the user and Claude
 Share/
+__pycache__/

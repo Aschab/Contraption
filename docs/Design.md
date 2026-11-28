@@ -36,16 +36,18 @@ Generate (seed + settings) → play/test the machine as the player would → ins
 
 ## Workshop & books
 - The machine stands on a work table in an alien workshop (Share/Workshop, tWorkshop). Each level opens with a camera flight through the workshop that lands on the table; then the background blurs (depth of field).
-- **Manual** (book, front-left of the table): four examples per page, vertically centred — input row(s) then the expected output row; a wax seal once that example is proven.
-- **Logbook** (book, front-right): every test as IN rows (input liquid icons) + OUT row, four tests per page filled from the top; entries can be deleted. OUT values that differ from the manual's answer for the same inputs are orange.
+- **Manual** (book, front-left of the table): four examples per page, vertically centred — input row(s) then the expected output row. No proof marks: checking that every example works is the player's job (a later "deliver machine" step will judge it).
+- **Logbook** (book, front-right): every test as IN rows (input liquid icons) + OUT row, four tests per page filled from the top; entries can be deleted. A test is written in once the machine has finished running it (the logbook hops, a page turns, the pen scratches). OUT values that differ from the manual's answer for the same inputs are orange.
 - Values are written as 2×2 grids (0 empty … 4 full) under five alien trait symbols (fixed for the whole game); each input liquid has a cog icon in its colour carrying its sample symbol.
-- **Sample tubes** (racks, left of the machine) are the input pool: each tag has an unmistakable symbol (triangle, ring, square, X, +, diamond, bars, dots) used in the books too. Loaded tubes stand raised; clicking a tube loads it.
+- **Sample tubes** (racks, left of the machine) are the input pool: each tag has an unmistakable symbol (triangle, ring, square, X, +, diamond, bars, dots) in its own ink colour, used in the books too; tags are drawn over the tubes' glow so they stay readable. Loaded tubes stand raised; clicking a tube loads it.
 - One book at a time can be lifted into view (manual on the left, logbook on the right); the camera leans so the machine stays visible beside it. The table and everything on it stay sharp; only the room behind blurs.
 
 ## Platform & input
 PC (Steam) first, consoles possible. Mouse is optional: every control must be reachable via keyboard/gamepad focus navigation.
 Focus (arrows / d-pad / mouse hover) reaches controls, the test trigger and displays (look only). Esc / pad B deselects (the whole machine shows again; a selected display's label glows); moving the mouse off the machine deselects too.
-**Accessibility:** *Magnify* (on by default, toggle in the HUD for now) slides the focused part toward the camera so it reads about twice as large.
+Mouse clicks on a dial or knob turn it up on its upper half and down on its lower half; a slider moves toward the click.
+**One thing at a time:** after a move the control's sound plays out, then the displays that changed update one by one (nearest to the control first), each with its own sound; controls, undo, reset and test wait meanwhile (well under a second).
+**Accessibility:** *Magnify* (on by default) slides the focused part toward the camera so it reads about twice as large. *Quick displays* (off by default) updates all displays at once, silently. Both in the pause menu.
 
 ## Visuals
 - **Grid layout** (saved with the level, editable in the lab): 2–5 rows, a silhouette (steps, towers, shoulders, arches, notches), parts placed anywhere. Each control/display kind has style variants with footprints 1×1, 2×2, 1×2–1×4, 2×1–4×1; a style never changes rules. Free cells get decorative fillers (vents, grilles, pipes, portholes, 2×2 fans/hatches).
@@ -57,8 +59,9 @@ Focus (arrows / d-pad / mouse hover) reaches controls, the test trigger and disp
 - Tests animate (~1.5 s) and can be skipped with any input or turned off.
 
 ## Audio
-- Every player action has its own sound: each control kind (lever up ≠ down, dial wrap ≠ click, refused move), the test run (trigger, machine start, vials), the result (match / mismatch / untested inputs / seal / machine fixed), display changes, focus/magnify, turning, the rear light, tubes, books, undo/reset, intro.
-- One-shots have 3 variations; playback picks a random one (never the same twice running) with a slight pitch wobble; each control has its own pitch.
+- Every player action has its own sound: each control kind (lever up ≠ down, dial wrap ≠ click, refused move), the test run (trigger, machine start, vials, rear cable nodes, then the logbook entry), display changes, focus/magnify, turning, the rear light, tubes, books, undo/reset, intro.
+- No result sounds: the machine doesn't say whether a test matched.
+- One-shots have 2–3 variations. Controls and other actions pick a random one (never the same twice running) with a slight pitch wobble, and each control has its own pitch; displays are predictable: each display always plays the same variation, unwobbled.
 - Sounds come from the Universal Sound FX and Ultimate Game Music packs (`Assets/ThirdParty/*`, see each `SOURCES.md`), trimmed and levelled on import; `ArtSource/Audio/synth_sfx.py` only fills names no pack provides.
 - Music: calm puzzle loops, a different one per machine, crossfaded. The pause menu (Esc / Start) has master, effects, ambience and music volumes.
 

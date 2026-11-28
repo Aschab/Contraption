@@ -9,7 +9,7 @@ namespace Contraption.Game
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
-        private static Material _base;
+        private static Material _base, _overlay;
         private static Shader _painted;
         private static MaterialPropertyBlock _block;
 
@@ -46,6 +46,21 @@ namespace Contraption.Game
             r.sharedMaterial = Base;
             Paint(r, color);
             return go;
+        }
+
+        // Unlit, and drawn after the transparent pass (glass, liquid glows), so small labels stay legible on glowing containers.
+        public static void Overlay(Transform root)
+        {
+            if (_overlay == null)
+            {
+                var shader = Shader.Find("Contraption/Icon");
+                _overlay = new Material(shader != null ? shader : Shader.Find("Universal Render Pipeline/Unlit")) { renderQueue = 3100 };
+            }
+            foreach (var r in root.GetComponentsInChildren<Renderer>())
+            {
+                r.sharedMaterial = _overlay;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
         }
 
         public static void Paint(Renderer r, Color color, Color emission = default, float smoothness = 0.35f)

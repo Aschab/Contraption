@@ -36,8 +36,9 @@ namespace Contraption.Game
         private bool _linear;
         private float _needleAngle, _needleTarget;
         private int _shown = int.MinValue;
+        private int _variant;
 
-        public static DisplayView Create(MachineKit kit, Look look, Transform machine, Vector3 pos, DisplayDef def, Placement p, GlyphSet glyphs)
+        public static DisplayView Create(MachineKit kit, Look look, Transform machine, Vector3 pos, DisplayDef def, Placement p, GlyphSet glyphs, int variant)
         {
             var go = new GameObject($"{def.Kind} display");
             go.transform.SetParent(machine, false);
@@ -51,6 +52,7 @@ namespace Contraption.Game
             v._look = look;
             v._glyphs = glyphs;
             v._placement = p;
+            v._variant = variant;
 
             var body = kit.Spawn(p.Style, go.transform, Vector3.zero, look).transform;
             v._label = MachineKit.FindOptional(body, "Label");
@@ -102,7 +104,8 @@ namespace Contraption.Game
             Art.Paint(_cursor, _look.Glow, _look.Glow * 1.5f);
         }
 
-        private void Sound(bool up)
+        // Each display always makes the same sound for the same change, so it can be recognised by ear.
+        private float Sound(bool up)
         {
             string name = _def.Kind switch
             {
@@ -111,7 +114,7 @@ namespace Contraption.Game
                 DisplayKind.Gauge => "disp_gauge_move",
                 _ => _script ? "disp_script_type" : "disp_glyph_change",
             };
-            Sfx.Play(name, transform.position, 0.8f);
+            return Sfx.PlayFixed(name, _variant, transform.position, 0.8f);
         }
 
         public void SetFocused(bool focused)
@@ -162,12 +165,18 @@ namespace Contraption.Game
             return r;
         }
 
-        public void Show(int[] state, bool instant)
+        private int Reading(int[] state) =>
+            _def.Kind == DisplayKind.Light ? (MachineRules.LightOn(_def, state) ? 1 : 0)
+            : _def.Kind == DisplayKind.Bar ? MachineRules.Readout(_def, state) : MachineRules.DisplayValue(_def, state);
+
+        public bool Differs(int[] state) => Reading(state) != _shown;
+
+        // Returns the length of the change sound (0 when silent: instant, or nothing changed).
+        public float Show(int[] state, bool instant)
         {
             int value = MachineRules.DisplayValue(_def, state);
-            int reading = _def.Kind == DisplayKind.Light ? (MachineRules.LightOn(_def, state) ? 1 : 0)
-                : _def.Kind == DisplayKind.Bar ? MachineRules.Readout(_def, state) : value;
-            if (!instant && _shown != int.MinValue && reading != _shown) Sound(reading > _shown);
+            int reading = Reading(state);
+            float sound = !instant && _shown != int.MinValue && reading != _shown ? Sound(reading > _shown) : 0f;
             _shown = reading;
             MachineRules.DisplayRange(_def, out int min, out int max);
             float norm = max > min ? (value - min) / (float)(max - min) : 0f;
@@ -201,6 +210,7 @@ namespace Contraption.Game
                             Glyphs.PaintStrokes(_strokes[i], _glyphs.Letters[_glyphs.Words[index][i]], on, 1.8f);
                     break;
             }
+            return sound;
         }
 
         private void Update()

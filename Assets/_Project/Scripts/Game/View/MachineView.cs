@@ -20,7 +20,6 @@ namespace Contraption.Game
         private readonly List<LiquidContainerView> _vials = new();
         private LiquidContainerView _output;
         private Transform _stream;
-        private Renderer _fixedLamp;
         private TestTriggerView _trigger;
         private MachineSession _session;
         private MachineKit _kit;
@@ -36,15 +35,17 @@ namespace Contraption.Game
         private readonly List<Transform> _parts = new();
         private readonly List<Vector3> _homes = new();
         private readonly List<float> _mag = new();
-        // Sound: last focus (no tick on rebuilds), verified entries before the latest test, the pending result.
+        // Last focus, so rebuilds don't tick.
         private int _lastFocus = -1;
-        private bool[] _verifiedBefore = new bool[0];
-        private string _result;
-        private bool _seal;
         private string _triggerSound = "test_plunger";
         private AudioSource _idle;
         private Vector3 _pivot;
         private float _turn;
+        // After a move the displays catch up one at a time, once the move's own sound is over; controls wait meanwhile.
+        private const float MaxLead = 0.4f, MinStep = 0.12f, MaxStep = 0.3f;
+        private Coroutine _settle, _conclude;
+        private float _lead;
+        private Vector2? _from;
 
         public int Focus { get; private set; }
         // Something is selected (highlighted, magnified). Released by Esc / B or moving the mouse off the machine;
@@ -52,7 +53,11 @@ namespace Contraption.Game
         public bool Engaged { get; private set; }
         public int ControlCount => _controls.Count;
         public Bounds Bounds { get; private set; }
-        public bool Animating => _play != null;
+        public bool Animating => _play != null || (_back != null && _back.Running);
+        // Displays are still catching up with the last move.
+        public bool Busy => _settle != null;
+        // A test has finished playing out (front and rear), so its log entry can be written.
+        public event System.Action TestFinished;
         public bool HasBack => _back != null;
         // Turned around to show the rear (cables between the displays in step order). Survives rebuilds.
         public bool ShowingBack { get; private set; }
@@ -67,8 +72,9 @@ namespace Contraption.Game
                 _session.Changed -= Refresh;
                 _session.Tested -= OnTested;
             }
-            if (_play != null) StopCoroutine(_play);
-            _play = null;
+            StopAllCoroutines();
+            _play = _settle = _conclude = null;
+            _lead = 0f;
             if (_root != null) Destroy(_root.gameObject);
             _controls.Clear();
             _displays.Clear();
@@ -96,7 +102,7 @@ namespace Contraption.Game
 
             var glyphs = GlyphSet.Create(def);
             for (int i = 0; i < def.Displays.Count; i++)
-                _displays.Add(DisplayView.Create(kit, _look.ForPart(_layout.Displays[i]), _root, Center(_layout.Displays[i]), def.Displays[i], _layout.Displays[i], glyphs));
+                _displays.Add(DisplayView.Create(kit, _look.ForPart(_layout.Displays[i]), _root, Center(_layout.Displays[i]), def.Displays[i], _layout.Displays[i], glyphs, i));
             for (int i = 0; i < def.Controls.Count; i++)
                 _controls.Add(ControlView.Create(kit, _look.ForPart(_layout.Controls[i]), _root, Center(_layout.Controls[i]), i, def.Controls[i], _layout.Controls[i], glyphs.Labels[i]));
             foreach (var f in _layout.Fillers)
@@ -134,7 +140,6 @@ namespace Contraption.Game
             Focus = 0;
             Engaged = false;
             _lastFocus = -1;
-            _result = null;
             _session.Changed += Refresh;
             _session.Tested += OnTested;
             Refresh(true);
@@ -213,7 +218,6 @@ namespace Contraption.Game
             {
                 _turn = Mathf.MoveTowards(_turn, ShowingBack ? 1f : 0f, Time.deltaTime / 0.9f);
                 ApplyTurn();
-                if (!Turning) Sfx.Play("machine_turn_end", transform.position);
             }
             Magnify();
         }
@@ -340,7 +344,7 @@ namespace Contraption.Game
             {
                 free.Remove(lampCol);
                 var lamp = _kit.Spawn("Lamp", _root, new Vector3(ColumnX(lampCol), TopY(lampCol), 0f), _look, "FixedLamp");
-                _fixedLamp = MachineKit.Find(lamp.transform, "Bulb").GetComponent<Renderer>();
+                Art.Paint(MachineKit.Find(lamp.transform, "Bulb").GetComponent<Renderer>(), _look.Dark * 1.6f, Color.black, 0.9f);
             }
             bool hero = _kit.Decor.Length > 0 && free.Count >= 2 && rng.Chance(0.6);
             for (int i = 0; i < free.Count; i++)
@@ -505,8 +509,12 @@ namespace Contraption.Game
                 ControlKind.Knob => _layout.Controls[c].Style.StartsWith("Ctl_Slider") ? "ctl_slider_step" : "ctl_knob_click",
                 _ => a == ActionKind.Center ? "ctl_joystick_center" : "ctl_joystick_push",
             };
-            Sfx.Play(name, _controls[c].transform.position, 1f, 1f + (c * 37 % 9 - 4) * 0.025f);
+            _from = FocusPosition(c);
+            Lead(Sfx.Play(name, _controls[c].transform.position, 1f, 1f + (c * 37 % 9 - 4) * 0.025f));
         }
+
+        // The displays wait this long (the sound of whatever changed the machine) before updating.
+        public void Lead(float seconds) => _lead = Mathf.Min(seconds, MaxLead);
 
         public void PlayBlocked(int c) => Sfx.Play("ctl_blocked", c < _controls.Count ? _controls[c].transform.position : transform.position);
 
@@ -547,7 +555,13 @@ namespace Contraption.Game
             var def = _session.Definition;
             var state = _session.CopyState();
             for (int i = 0; i < _controls.Count; i++) _controls[i].Show(state[def.ControlSlot(i)], instant);
-            foreach (var d in _displays) d.Show(state, instant);
+            if (instant || Accessibility.Quick)
+            {
+                if (_settle != null) StopCoroutine(_settle);
+                _settle = null;
+                foreach (var d in _displays) d.Show(state, true);
+            }
+            else if (_settle == null && _displays.Exists(d => d.Differs(state))) _settle = StartCoroutine(Settle());
 
             bool outputShown = _testedInputs != null;
             bool stale = outputShown && (_session.LastOutput == null || !SameInputs());
@@ -563,13 +577,40 @@ namespace Contraption.Game
                 _output.SetFill(0f, instant ? 0f : 0.3f);
                 foreach (var v in _vials) v.SetFill(0f, instant ? 0f : 0.25f);
             }
-
-            _verifiedBefore = (bool[])_session.Verified.Clone();
-            bool solved = _session.Solved;
-            // A fixed machine idles calmer.
-            if (_idle != null) { Sfx.SetVolume(_idle, solved ? 0.3f : 0.7f); _idle.pitch = solved ? 0.92f : 1f; }
-            if (_fixedLamp != null) Art.Paint(_fixedLamp, solved ? Color.green : _look.Dark * 1.6f, solved ? Color.green * 3f : Color.black, 0.9f);
             ApplyFocus();
+        }
+
+        // One display at a time, nearest to the control that moved first, each with its own sound; reads the
+        // latest state as it goes, so changes made meanwhile are picked up too.
+        private IEnumerator Settle()
+        {
+            yield return null;   // the move's sound (Lead) is chosen after the state changes
+            if (_lead > 0f) yield return new WaitForSeconds(_lead);
+            while (true)
+            {
+                var state = _session.CopyState();
+                var next = NextDisplay(state);
+                if (next == null) break;
+                yield return new WaitForSeconds(Mathf.Clamp(next.Show(state, false), MinStep, MaxStep));
+            }
+            _lead = 0f;
+            _from = null;
+            _settle = null;
+        }
+
+        private DisplayView NextDisplay(int[] state)
+        {
+            DisplayView best = null;
+            float bestScore = float.MaxValue;
+            for (int i = 0; i < _displays.Count; i++)
+            {
+                if (!_displays[i].Differs(state)) continue;
+                Vector2 p = _homes[_controls.Count + i];
+                // Without a control to start from (undo, reset): reading order.
+                float score = _from.HasValue ? (p - _from.Value).sqrMagnitude : -p.y * 100f + p.x;
+                if (score < bestScore) { bestScore = score; best = _displays[i]; }
+            }
+            return best;
         }
 
         private bool SameInputs()
@@ -587,14 +628,23 @@ namespace Contraption.Game
             _stages = MachineRules.Stages(def, _session.CopyState(), inputs);
             _testedInputs = (int[])_session.SelectedInputs.Clone();
             _trigger.Play();
-            PrepareResult();
             Sfx.Play(_triggerSound, _trigger.transform.position);
             Sfx.Play("machine_start", transform.position, 0.5f);
-            if (_back != null) _back.Pulse();
+            if (_back != null && (AnimateTests || ShowingBack)) _back.Pulse();
             if (_play != null) StopCoroutine(_play);
             _play = null;
             if (AnimateTests) _play = StartCoroutine(Play(inputs));
             else Finish();
+            if (_conclude != null) StopCoroutine(_conclude);
+            _conclude = StartCoroutine(Conclude());
+        }
+
+        private IEnumerator Conclude()
+        {
+            yield return null;
+            while (_play != null || (_back != null && _back.Running)) yield return null;
+            _conclude = null;
+            TestFinished?.Invoke();
         }
 
         private IEnumerator Play(List<Liquid> inputs)
@@ -630,7 +680,6 @@ namespace Contraption.Game
             }
             _stream.gameObject.SetActive(false);
             _play = null;
-            PlayResult();
         }
 
         // Jumps to the end of the current test animation.
@@ -638,36 +687,18 @@ namespace Contraption.Game
 
         private void Skip(bool sound)
         {
-            if (_play == null) return;
-            StopCoroutine(_play);
-            _play = null;
+            bool rear = _back != null && _back.Running;
+            if (_play == null && !rear) return;
+            if (_play != null) StopCoroutine(_play);
+            if (rear) _back.Stop();
             if (sound) Sfx.Play("test_skip");
-            else _result = null;
+            if (_play == null) return;
+            _play = null;
             Finish();
-        }
-
-        // match / mismatch / no manual entry for these inputs; the machine-fixed fanfare replaces the last match.
-        private void PrepareResult()
-        {
-            var record = _session.Log[_session.Log.Count - 1];
-            int e = _session.ManualEntryFor(record);
-            bool wasFixed = _verifiedBefore.Length > 0 && System.Array.TrueForAll(_verifiedBefore, v => v);
-            bool ok = e >= 0 && _session.Verified[e];
-            _result = _session.Solved && !wasFixed ? "machine_fixed" : e < 0 ? "result_new" : ok ? "result_match" : "result_mismatch";
-            _seal = ok && (e >= _verifiedBefore.Length || !_verifiedBefore[e]);
-        }
-
-        private void PlayResult()
-        {
-            if (_result == null) return;
-            Sfx.Play(_result);
-            if (_seal) Sfx.PlayDelayed(this, 0.35f, "seal_stamp");
-            _result = null;
         }
 
         private void Finish()
         {
-            PlayResult();
             foreach (var c in _inputs) c.SetFill(0f, 0f);
             for (int i = 0; i < _vials.Count; i++)
             {

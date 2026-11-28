@@ -65,6 +65,7 @@ namespace Contraption.Game
             _view.transform.localScale = Vector3.one * Workshop.MachineScale;
             _desk = new BookDesk(_kits[KitIndex], _workshop.Root, _camera, _workshop.ManualRest, _workshop.LogRest);
             _rack = new SampleRack(_kits[KitIndex], _workshop.Root, _workshop.RackOrigin);
+            _view.TestFinished += _desk.WriteLog;
             Settings = LoadSettings();
             SeedText = PlayerPrefs.GetString(SeedKey, "1");
             Generate();

@@ -9,7 +9,6 @@ namespace Contraption.Game
         public static readonly Color Ink = new(0.2f, 0.14f, 0.1f);
         public static readonly Color Fill = new(0.22f, 0.72f, 0.66f);
         public static readonly Color Mismatch = new(0.96f, 0.64f, 0.18f);
-        public static readonly Color Seal = new(0.62f, 0.1f, 0.08f);
 
         private readonly Transform _root;
         public Color Paper { get; }
@@ -86,6 +85,15 @@ namespace Contraption.Game
         // Sample tag symbols: simple and unmistakable, one per tube in the input pool (also drawn on the tube tags).
         public const int SampleSymbolCount = 8;
 
+        // Each sample's symbol also has its own ink, on the tube tag and in the books.
+        private static readonly Color[] SampleInks =
+        {
+            new(0.78f, 0.1f, 0.14f), new(0.1f, 0.3f, 0.82f), new(0.08f, 0.55f, 0.2f), new(0.52f, 0.16f, 0.68f),
+            new(0.9f, 0.45f, 0.04f), new(0f, 0.5f, 0.56f), new(0.82f, 0.1f, 0.56f), new(0.45f, 0.28f, 0.1f),
+        };
+
+        public static Color SampleInk(int index) => SampleInks[((index % SampleInks.Length) + SampleInks.Length) % SampleInks.Length];
+
         public void SampleSymbol(Vector2 c, float s, int index, Color color, float w = 0.0035f, int layer = 1)
         {
             float h = s / 2f;
@@ -142,7 +150,7 @@ namespace Contraption.Game
             Disc(c, r, Ink, 1);
             Disc(c, r * 0.85f, Art.LiquidColor(l.Color), 2);
             Disc(c, r * 0.62f, Paper, 3);
-            SampleSymbol(c, r * 0.8f, poolIndex, Ink, r * 0.12f, 4);
+            SampleSymbol(c, r * 0.8f, poolIndex, SampleInk(poolIndex), r * 0.15f, 4);
         }
 
         // "→◯" (goes in) and "◯→" (comes out).
