@@ -241,23 +241,32 @@ def seamless(x, fade):
     return body
 
 def write(path, x):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with wave.open(path, "wb") as w:
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
         w.writeframes(b"".join(struct.pack("<h", int(max(-1, min(1, v)) * 32767)) for v in x))
 
+# Sounds imported from asset packs (Assets/ThirdParty/*/Resources/Audio) win; don't generate duplicates of them.
+def provided():
+    import glob, re
+    root = os.path.join(os.path.dirname(__file__), "../../Assets/ThirdParty")
+    return {re.sub(r"_\d+$", "", os.path.basename(f)[:-4]) for f in glob.glob(root + "/*/Resources/Audio/*/*.*") if not f.endswith(".meta")}
+
 def main():
-    os.makedirs(OUT, exist_ok=True)
+    skip = provided()
     for name, (fn, peak) in ONE.items():
+        if name in skip: continue
         for v in range(VARIANTS):
             rng = random.Random(zlib.crc32(f"{name}/{v}".encode()))
             x = fn(rng)
             write(os.path.join(OUT, f"{name}_{v}.wav"), normalize(x, peak))
     for name, (fn, sec, peak) in LOOPS.items():
+        if name in skip: continue
         rng = random.Random(zlib.crc32(name.encode()))
         x = fn(rng, sec + 0.5)
         m = max(abs(v) for v in x)
         write(os.path.join(OUT, f"{name}.wav"), [v * peak / m for v in seamless(x, 0.5)])
-    print(len(ONE) * VARIANTS + len(LOOPS), "files")
+    print("skipped (provided by packs):", len(skip))
 
 if __name__ == "__main__":
     main()

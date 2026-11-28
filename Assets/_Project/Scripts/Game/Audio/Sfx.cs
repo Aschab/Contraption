@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace Contraption.Game
 {
-    // Sound effects from Resources/Audio/Sfx (made by ArtSource/Audio/synth_sfx.py) and ambience loops from
-    // Resources/Audio/Ambience (Suno). One-shots come as variations "<name>_<i>": each play picks a random one
+    // Sound effects from any Resources/Audio/Sfx folder (asset packs under Assets/ThirdParty, or
+    // ArtSource/Audio/synth_sfx.py for sounds no pack provides) and ambience loops from Resources/Audio/Ambience. One-shots come as variations "<name>_<i>": each play picks a random one
     // (never the same twice in a row) with a slight pitch wobble. Loops are a single "<name>" clip.
     // Volumes follow SoundSettings: one-shots use the Effects channel, loops the channel they were made with.
     public static class Sfx

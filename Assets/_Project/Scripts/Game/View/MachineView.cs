@@ -118,7 +118,7 @@ namespace Contraption.Game
             BuildTops(rng, freeTops);
             BuildOutput(def);
             BuildPlates(def);
-            _idle = Sfx.Loop("machine_idle", _root, new Vector3(0f, _baseH + _layout.Rows * Cell / 2f, 0f), 0.35f, SoundChannel.Ambience);
+            _idle = Sfx.Loop("machine_idle", _root, new Vector3(0f, _baseH + _layout.Rows * Cell / 2f, 0f), 0.7f, SoundChannel.Ambience);
             if (_idle != null) { _idle.time = Random.Range(0f, _idle.clip.length); _idle.Play(); }
             _back = def.Hints != null && def.Hints.Back ? BuildBack(def) : null;
 
@@ -537,7 +537,7 @@ namespace Contraption.Game
             _verifiedBefore = (bool[])_session.Verified.Clone();
             bool solved = _session.Solved;
             // A fixed machine idles calmer.
-            if (_idle != null) { Sfx.SetVolume(_idle, solved ? 0.15f : 0.35f); _idle.pitch = solved ? 0.92f : 1f; }
+            if (_idle != null) { Sfx.SetVolume(_idle, solved ? 0.3f : 0.7f); _idle.pitch = solved ? 0.92f : 1f; }
             if (_fixedLamp != null) Art.Paint(_fixedLamp, solved ? Color.green : _look.Dark * 1.6f, solved ? Color.green * 3f : Color.black, 0.9f);
             SetFocus(Focus);
         }

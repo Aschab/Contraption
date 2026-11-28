@@ -19,6 +19,7 @@ namespace Contraption.Game
         private readonly AnalyzerHud _hud = new();
         private readonly LabPanel _panel = new();
         private readonly PauseMenu _menu = new();
+        private MachineDefinition _musicFor;
         private MachineView _view;
         private MachineKit[] _kits;
         private Workshop _workshop;
@@ -198,6 +199,11 @@ namespace Contraption.Game
             _rack.Bind(Session);
             Frame();
             if (_intro == null && Time.timeSinceLevelLoad > 1f) Sfx.Play("level_start");
+            if (def != _musicFor)
+            {
+                _musicFor = def;
+                Music.Next(this);
+            }
         }
 
         public void SetKit(int index)

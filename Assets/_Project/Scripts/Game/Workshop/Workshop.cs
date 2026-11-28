@@ -43,7 +43,7 @@ namespace Contraption.Game
                     m.SetFloat("_Smoothness", 0.15f);
                 }
             Sfx.Ambient("workshop_ambience", 0.55f);
-            Sfx.Ambient("lamp_buzz", 0.18f);
+            Sfx.Ambient("lamp_buzz", 0.6f);
             foreach (var t in room.GetComponentsInChildren<Transform>())
             {
                 if (!t.name.StartsWith("Lamp")) continue;

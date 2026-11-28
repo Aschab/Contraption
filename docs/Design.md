@@ -59,5 +59,6 @@ Focus (arrows / d-pad / mouse hover) reaches controls, the test trigger and disp
 ## Audio
 - Every player action has its own sound: each control kind (lever up ≠ down, dial wrap ≠ click, refused move), the test run (trigger, machine start, vials), the result (match / mismatch / untested inputs / seal / machine fixed), display changes, focus/magnify, turning, the rear light, tubes, books, undo/reset, intro.
 - One-shots have 3 variations; playback picks a random one (never the same twice running) with a slight pitch wobble; each control has its own pitch.
-- Effects are synthesised by `ArtSource/Audio/synth_sfx.py` into `Resources/Audio/Sfx`; ambience loops (workshop room tone, machine idle, lamps) come from Suno.
+- Sounds come from the Universal Sound FX and Ultimate Game Music packs (`Assets/ThirdParty/*`, see each `SOURCES.md`), trimmed and levelled on import; `ArtSource/Audio/synth_sfx.py` only fills names no pack provides.
+- Music: calm puzzle loops, a different one per machine, crossfaded. The pause menu (Esc / Start) has master, effects, ambience and music volumes.
 
