@@ -19,6 +19,8 @@ namespace Contraption.Game
         private Liquid? _value;
         private float _fill, _target, _speed;
 
+        // Scales glow, colour and effect lights (sample tubes are dimmed).
+        public float Brightness = 1f;
         public Transform Inlet { get; private set; }
         public Transform Outlet { get; private set; }
         public float Fill => _fill;
@@ -94,18 +96,19 @@ namespace Contraption.Game
         {
             bool visible = _value.HasValue && _fill > 0.001f;
             _liquid.enabled = visible;
+            _fx.LightScale = Brightness;
             _fx.Show(_value, _fill);
             if (!visible) return;
             var l = _value.Value;
             const float k = 1f / Values.Max;
             _liquid.GetPropertyBlock(_block);
-            _block.SetColor(BaseColorId, Art.LiquidColor(l.Color));
+            _block.SetColor(BaseColorId, Art.LiquidColor(l.Color) * Mathf.Lerp(0.6f, 1f, Brightness));
             _block.SetFloat(FillLevelId, SurfaceY);
             float size = Mathf.Min(LiquidBounds.size.x, 1f);
             _block.SetFloat(WobbleId, Mathf.Lerp(0.035f, 0.004f, l.Viscosity * k) * size * (Moving ? 1.6f : 1f));
             _block.SetFloat(WobbleSpeedId, Mathf.Lerp(7f, 0.8f, l.Viscosity * k));
             _block.SetFloat(RefractionId, l.Refraction * k);
-            _block.SetFloat(EmissionId, 0.15f + l.Temperature * k * 0.25f);
+            _block.SetFloat(EmissionId, (0.15f + l.Temperature * k * 0.25f) * Brightness);
             _liquid.SetPropertyBlock(_block);
         }
     }

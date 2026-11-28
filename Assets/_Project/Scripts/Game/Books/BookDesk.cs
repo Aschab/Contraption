@@ -8,8 +8,9 @@ namespace Contraption.Game
     // The manual (left) and the logbook (right) on the table; one of them can be lifted into view at a time.
     // Manual: up to four examples per page (inputs → expected output), vertically centred, sealed once proven.
     // Logbook: every test as IN rows + OUT row; OUT cells that differ from the manual's answer for the same inputs are orange.
-    // Keys: Q manual, E logbook (look / put down), ←→ turn the book in view, ↑↓ pick a log entry, Delete removes it, Esc puts it down.
-    // Gamepad: LT manual, RT logbook, d-pad as arrows while a book is up, right-stick press deletes. Mouse: click a book to pick it up,
+    // Keys: Q manual, E logbook (look / put down), ←→ turn the book in view (past its last page, back toward the machine, puts it down),
+    // ↑↓ pick a log entry, Delete removes it, Esc puts it down. Focus moved off the machine's left/right edge lifts a book (Open).
+    // Gamepad: LT manual, RT logbook, d-pad/left stick as arrows while a book is up, B puts it down, right-stick press deletes. Mouse: click a book to pick it up,
     // click its left/right page to turn, click ✕ to delete an entry, right-click to put it down.
     public sealed class BookDesk
     {
@@ -84,8 +85,8 @@ namespace Contraption.Game
                 if (kb.escapeKey.wasPressedThisFrame && _active != null) Toggle(_active);
                 if (CapturesArrows)
                 {
-                    if (kb.leftArrowKey.wasPressedThisFrame) _active.Turn(-1);
-                    if (kb.rightArrowKey.wasPressedThisFrame) _active.Turn(1);
+                    if (kb.leftArrowKey.wasPressedThisFrame) Page(-1);
+                    if (kb.rightArrowKey.wasPressedThisFrame) Page(1);
                     if (kb.upArrowKey.wasPressedThisFrame) Select(-1);
                     if (kb.downArrowKey.wasPressedThisFrame) Select(1);
                     if (kb.deleteKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame) DeleteSelected();
@@ -97,12 +98,14 @@ namespace Contraption.Game
             {
                 if (pad.leftTrigger.wasPressedThisFrame) Toggle(_manual);
                 if (pad.rightTrigger.wasPressedThisFrame) Toggle(_log);
+                var stick = Flick(pad.leftStick.ReadValue());
                 if (CapturesArrows)
                 {
-                    if (pad.dpad.left.wasPressedThisFrame) _active.Turn(-1);
-                    if (pad.dpad.right.wasPressedThisFrame) _active.Turn(1);
-                    if (pad.dpad.up.wasPressedThisFrame) Select(-1);
-                    if (pad.dpad.down.wasPressedThisFrame) Select(1);
+                    if (pad.buttonEast.wasPressedThisFrame) { Toggle(_active); return; }
+                    if (pad.dpad.left.wasPressedThisFrame || stick.x < 0) Page(-1);
+                    if (pad.dpad.right.wasPressedThisFrame || stick.x > 0) Page(1);
+                    if (pad.dpad.up.wasPressedThisFrame || stick.y > 0) Select(-1);
+                    if (pad.dpad.down.wasPressedThisFrame || stick.y < 0) Select(1);
                     if (pad.rightStickButton.wasPressedThisFrame) DeleteSelected();
                 }
             }
@@ -124,6 +127,32 @@ namespace Contraption.Game
             if (mouse.rightButton.wasPressedThisFrame) { if (book.Held) Toggle(book); }
             else if (!book.Held) Toggle(book);
             else book.Turn(book.SideOf(hit.point));
+        }
+
+        public void Open(int side)
+        {
+            var book = side < 0 ? _manual : _log;
+            if (!book.Held) Toggle(book);
+        }
+
+        // Past the end that faces the machine (manual: last page, logbook: first page) puts the book down.
+        private void Page(int dir)
+        {
+            bool towardMachine = _active == _manual ? dir > 0 : dir < 0;
+            int next = _active.Spread + dir;
+            if (towardMachine && (next < 0 || next >= _active.SpreadCount)) Toggle(_active);
+            else _active.Turn(dir);
+        }
+
+        private Vector2Int _lastStick;
+
+        private Vector2Int Flick(Vector2 stick)
+        {
+            var dir = stick.magnitude < 0.6f ? Vector2Int.zero
+                : Mathf.Abs(stick.x) > Mathf.Abs(stick.y) ? new Vector2Int((int)Mathf.Sign(stick.x), 0) : new Vector2Int(0, (int)Mathf.Sign(stick.y));
+            bool fresh = dir != _lastStick;
+            _lastStick = dir;
+            return fresh ? dir : Vector2Int.zero;
         }
 
         // Only one book is up at a time.

@@ -7,16 +7,17 @@ namespace Contraption.Game
 {
     // Mouse is optional: everything is reachable with keyboard or gamepad. Navigate with one hand, manipulate with the other.
     // The test trigger is part of focus navigation; using or turning it runs a test.
+    // Moving focus past the machine's left/right edge lifts the manual/logbook (atEdge).
     // Keys: arrows move focus, W/D turn up, S/A turn down (joystick: W/A/S/D push), Space use, Z undo, R reset, T test, [ ] input, Tab port.
     // Gamepad: d-pad/left stick focus, right stick turn/push, A use, X undo, Y reset, B test, LB/RB input, Select port.
-    // Mouse: click use (joystick: click a side, centre to centre), right click / scroll back; click the big plunger/lever to test.
+    // Mouse: hover focuses a control, click use (joystick: click a side, centre to centre), right click / scroll back; click the big plunger/lever to test.
     public sealed class MachineInput
     {
         public int ActivePort;
         private Vector2Int _lastLeft, _lastRight;
 
         // arrowsFree: false while a book is up (arrows/d-pad turn its pages instead of moving focus).
-        public void Tick(MachineSession s, MachineView v, Camera cam, bool keyboardFree, bool arrowsFree, Func<Vector2, bool> overGui)
+        public void Tick(MachineSession s, MachineView v, Camera cam, bool keyboardFree, bool arrowsFree, Func<Vector2, bool> overGui, Action<int> atEdge)
         {
             if (v.Animating && AnyPress()) v.Skip();
 
@@ -27,6 +28,11 @@ namespace Contraption.Game
                 bool blocked = overGui(new Vector2(pos.x, Screen.height - pos.y));
                 RaycastHit hit = default;
                 bool hitSomething = !blocked && Physics.Raycast(cam.ScreenPointToRay(pos), out hit, 100f);
+                if (hitSomething && mouse.delta.ReadValue().sqrMagnitude > 0f)
+                {
+                    if (v.TryGetControl(hit.collider, out var hovered)) { if (v.Focus != hovered.Index) v.SetFocus(hovered.Index); }
+                    else if (v.IsTestTrigger(hit.collider) && !v.TriggerFocused) v.SetFocus(v.ControlCount);
+                }
                 if (hitSomething && mouse.leftButton.wasPressedThisFrame && v.IsTestTrigger(hit.collider)) s.Test();
                 else if (hitSomething && v.TryGetControl(hit.collider, out var cv))
                 {
@@ -51,10 +57,10 @@ namespace Contraption.Game
             var kb = Keyboard.current;
             if (kb != null && keyboardFree)
             {
-                if (arrowsFree && kb.leftArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.left);
-                if (arrowsFree && kb.rightArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.right);
-                if (arrowsFree && kb.upArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.up);
-                if (arrowsFree && kb.downArrowKey.wasPressedThisFrame) v.MoveFocus(Vector2.down);
+                if (arrowsFree && kb.leftArrowKey.wasPressedThisFrame) Move(v, Vector2Int.left, atEdge);
+                if (arrowsFree && kb.rightArrowKey.wasPressedThisFrame) Move(v, Vector2Int.right, atEdge);
+                if (arrowsFree && kb.upArrowKey.wasPressedThisFrame) Move(v, Vector2Int.up, atEdge);
+                if (arrowsFree && kb.downArrowKey.wasPressedThisFrame) Move(v, Vector2Int.down, atEdge);
                 if (kb.wKey.wasPressedThisFrame) Turn(s, v, Vector2Int.up);
                 if (kb.sKey.wasPressedThisFrame) Turn(s, v, Vector2Int.down);
                 if (kb.aKey.wasPressedThisFrame) Turn(s, v, Vector2Int.left);
@@ -76,17 +82,22 @@ namespace Contraption.Game
                 if (arrowsFree && pad.dpad.right.wasPressedThisFrame) left = Vector2Int.right;
                 if (arrowsFree && pad.dpad.up.wasPressedThisFrame) left = Vector2Int.up;
                 if (arrowsFree && pad.dpad.down.wasPressedThisFrame) left = Vector2Int.down;
-                if (left != Vector2Int.zero) v.MoveFocus(left);
+                if (left != Vector2Int.zero && arrowsFree) Move(v, left, atEdge);
                 var right = Flick(pad.rightStick.ReadValue(), ref _lastRight);
                 if (right != Vector2Int.zero) Turn(s, v, right);
                 if (pad.buttonSouth.wasPressedThisFrame) Use(s, v, v.Focus);
                 if (pad.buttonWest.wasPressedThisFrame) s.Undo();
                 if (pad.buttonNorth.wasPressedThisFrame) s.Reset();
-                if (pad.buttonEast.wasPressedThisFrame) s.Test();
+                if (pad.buttonEast.wasPressedThisFrame && arrowsFree) s.Test();   // with a book up, B puts it down
                 if (pad.leftShoulder.wasPressedThisFrame) CycleInput(s, -1);
                 if (pad.rightShoulder.wasPressedThisFrame) CycleInput(s, 1);
                 if (pad.selectButton.wasPressedThisFrame) ActivePort = (ActivePort + 1) % s.Definition.InputPorts;
             }
+        }
+
+        private static void Move(MachineView v, Vector2Int dir, Action<int> atEdge)
+        {
+            if (!v.MoveFocus(dir) && dir.x != 0) atEdge(dir.x);
         }
 
         private static bool AnyPress() =>

@@ -48,6 +48,7 @@ namespace Contraption.Game
                     var slot = MachineKit.Find(rack, "Slot" + k);
                     var pos = _root.InverseTransformPoint(slot.position);
                     var tube = LiquidContainerView.Create(_kit, look, _root, "Sample_Tube", pos);
+                    tube.Brightness = 0.35f;   // dimmer than the machine's tanks so the tags stay readable
                     tube.Show(pool[i]);
                     tube.SetFill(1f, 0f);
                     DrawTag(tube.transform, look.Panel, i);
@@ -66,7 +67,7 @@ namespace Contraption.Game
             var face = MachineKit.Find(tube, "TagFace");
             var content = new GameObject("Tag").transform;
             content.SetParent(face, false);
-            new PageDrawer(content, paper).SampleSymbol(Vector2.zero, 0.03f, index, PageDrawer.Ink, 0.004f);
+            new PageDrawer(content, paper).SampleSymbol(Vector2.zero, 0.052f, index, PageDrawer.Ink, 0.0065f);
         }
 
         public void Tick(Camera cam, Func<Vector2, bool> overGui, int activePort)

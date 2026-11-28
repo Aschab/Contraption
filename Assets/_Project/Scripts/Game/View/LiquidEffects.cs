@@ -19,6 +19,7 @@ namespace Contraption.Game
         private float _width, _scale = 1f;
 
         // World Y of the liquid surface, set by the container every frame.
+        public float LightScale { get; set; } = 1f;
         public float Level { get; set; }
         public Bounds Bounds { get; set; }
 
@@ -126,7 +127,7 @@ namespace Contraption.Game
                 _ice[i].rotation = Quaternion.Euler(10f * Mathf.Sin(t + i), i * 37f + t * 6f, 8f * Mathf.Cos(t * 0.8f + i));
             }
             _light.transform.position = top + new Vector3(0f, 0.1f, -0.5f) * _scale;
-            _light.intensity = (l.Refraction >= 4 ? 2.5f : 1.2f) * (0.75f + 0.25f * Mathf.PerlinNoise(t * 3f, GetInstanceID()));
+            _light.intensity = LightScale * (l.Refraction >= 4 ? 2.5f : 1.2f) * (0.75f + 0.25f * Mathf.PerlinNoise(t * 3f, GetInstanceID()));
         }
 
         private static void Toggle(ParticleSystem ps, bool on)

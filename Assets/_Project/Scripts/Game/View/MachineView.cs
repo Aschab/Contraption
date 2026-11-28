@@ -279,8 +279,8 @@ namespace Contraption.Game
             ? (Vector2)_controls[i].transform.localPosition
             : (Vector2)(_trigger.transform.localPosition + _trigger.FocusPoint);
 
-        // Spatial navigation: the nearest control roughly in the pressed direction.
-        public void MoveFocus(Vector2 dir)
+        // Spatial navigation: the nearest control roughly in the pressed direction; false at the machine's edge.
+        public bool MoveFocus(Vector2 dir)
         {
             var from = FocusPosition(Focus);
             int best = -1;
@@ -295,6 +295,7 @@ namespace Contraption.Game
                 if (score < bestScore) { bestScore = score; best = i; }
             }
             if (best >= 0) SetFocus(best);
+            return best >= 0;
         }
 
         public void Pulse(int control) => _controls[control].Pulse();

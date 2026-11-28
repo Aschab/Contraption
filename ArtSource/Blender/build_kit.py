@@ -683,11 +683,11 @@ def sample_tube():
     mb.sphere(0.035, (0, 0, 0.03), "Glass", subdiv=2)
     mb.cyl(0.032, 0.05, (0, 0, 0.31), "Wood", segs=8, axis="Z", r2=0.028)
     mb.box((0.004, 0.004, 0.05), (0, -0.04, 0.27), "Dark", 0)                 # string
-    mb.box((0.075, 0.006, 0.055), (0, -0.045, 0.22), "Panel", 0.004)          # tag
-    mb.cyl(0.006, 0.008, (0, -0.049, 0.243), "Dark", segs=6)                  # tag hole
+    mb.box((0.095, 0.006, 0.078), (0, -0.045, 0.218), "Panel", 0.004)         # tag
+    mb.cyl(0.005, 0.008, (0, -0.049, 0.25), "Dark", segs=6)                   # tag hole
     root = mb.build("Sample_Tube")
     liquid(root, lambda l: (l.cyl(0.03, 0.2, (0, 0, 0.13), "Liquid", segs=10, axis="Z"), l.sphere(0.03, (0, 0, 0.035), "Liquid", subdiv=2)))
-    empty("TagFace", root, (0, -0.049, 0.215))
+    empty("TagFace", root, (0, -0.049, 0.212))
     return root
 
 def sample_rack():

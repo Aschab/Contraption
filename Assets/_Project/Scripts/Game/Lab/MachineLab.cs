@@ -96,10 +96,12 @@ namespace Contraption.Game
             if (Session != null)
             {
                 if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && !OverGui(GuiMouse())) GUIUtility.keyboardControl = 0;
+                if (PanelsHidden) GUIUtility.keyboardControl = 0;
                 bool keyboardFree = GUIUtility.keyboardControl == 0;
+                bool bookUp = _desk.CapturesArrows;   // before the desk ticks, so a press that puts a book down isn't reused below
                 _desk.Tick(_camera, OverGui, keyboardFree);
                 _rack.Tick(_camera, OverGui, _input.ActivePort);
-                _input.Tick(Session, _view, _camera, keyboardFree, !_desk.CapturesArrows, OverGui);
+                _input.Tick(Session, _view, _camera, keyboardFree, !bookUp && !_desk.CapturesArrows, OverGui, _desk.Open);
             }
         }
 
